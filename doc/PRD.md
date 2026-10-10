@@ -9,7 +9,7 @@
 | **Author** | Raihanur Akter — Student ID: 2310176 |
 | **Course / Section** | Web Application & Internet (Course Code: 309), Section 06 |
 | **Submitted To** | Sayef Reyadh, Lecturer |
-| **Task Issue Link** | [https://github.com/raihanurakter02/2310176-CourseEnroll/issues/2] |
+| **Task Issue Link** | [https://github.com/raihanurakter02/2310176-CourseEnroll/issues/1] |
 | **Pull Request Link** | [Paste GitHub PR URL here] |
 | **Related Documents** | [PRD](PRD.md) · [SRS](SRS.md) |
 
