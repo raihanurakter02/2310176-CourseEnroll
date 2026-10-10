@@ -9,7 +9,7 @@
 | **Author** | Raihanur Akter — Student ID: 2310176 |
 | **Course / Section** | Web Application & Internet (Course Code: 309), Section 06 |
 | **Submitted To** | Sayef Reyadh, Lecturer |
-| **Task Issue Link** | [Paste GitHub Issue URL here] |
+| **Task Issue Link** | [https://github.com/raihanurakter02/2310176-CourseEnroll/issues/2] |
 | **Pull Request Link** | [Paste GitHub PR URL here] |
 | **Related Documents** | [PRD](PRD.md) · [SRS](SRS.md) |
 
@@ -764,6 +764,3 @@ cd backend && pytest -v
 | Stale roles in tokens | Wrong access after role change | Role and active flag re-read from DB on each request. |
 | Scope creep | Missed deadline | Strict adherence to PRD scope; extras only in Future Enhancements. |
 | Token stored in `localStorage` | XSS exposure | React output escaping; no raw HTML rendering; documented trade-off. |
-
-
-<!-- This is END -->
