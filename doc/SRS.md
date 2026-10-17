@@ -1,4 +1,4 @@
-# Software Requirements Specification (SRS) — CourseEnroll
+# Software Requirements Specification (SRS) —CourseEnroll
 
 | Field | Value |
 |---|---|
