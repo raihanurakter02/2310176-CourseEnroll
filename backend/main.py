@@ -2,8 +2,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from . import models, schemas
-from .database import Base, engine, get_db
+from backend import models, schemas
+from backend.database import Base, engine, get_db
 
 # Create tables in Supabase
 Base.metadata.create_all(bind=engine)
