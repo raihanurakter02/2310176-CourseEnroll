@@ -9,8 +9,7 @@ interface Course {
   description: string;
 }
 
-const API_URL = "http://localhost:8000/courses/";
-
+const API_URL = import.meta.env.PROD ? "/api/courses/" : "http://localhost:8000/courses/";
 export default function CourseManager() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [form, setForm] = useState({ course_code: "", title: "", description: "" });
