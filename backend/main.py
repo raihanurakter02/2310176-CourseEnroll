@@ -141,3 +141,40 @@ def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends
 def get_my_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
     enrollments = db.query(models.Enrollment).filter(models.Enrollment.student_id == current_user.id).all()
     return enrollments
+# --- ADDITIONAL STUDENT ENDPOINT ---
+@app.delete("/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
+    enrollment = db.query(models.Enrollment).filter(
+        models.Enrollment.id == enrollment_id,
+        models.Enrollment.student_id == current_user.id
+    ).first()
+    
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+        
+    db.delete(enrollment)
+    db.commit()
+    return None
+
+# --- FACULTY ENDPOINTS ---
+allow_faculty_only = RoleChecker([models.UserRole.faculty])
+
+@app.get("/faculty/courses", response_model=List[schemas.CourseResponse])
+def get_assigned_courses(db: Session = Depends(get_db), current_user: models.User = Depends(allow_faculty_only)):  # noqa: B008
+    courses = db.query(models.Course).filter(models.Course.faculty_id == current_user.id).all()
+    return courses
+
+@app.get("/faculty/courses/{course_id}/students", response_model=List[schemas.UserResponse])
+def get_enrolled_students(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_faculty_only)):  # noqa: B008
+    course = db.query(models.Course).filter(
+        models.Course.id == course_id, 
+        models.Course.faculty_id == current_user.id
+    ).first()
+    
+    if not course:
+        raise HTTPException(status_code=403, detail="Not authorized to view this course")
+        
+    enrollments = db.query(models.Enrollment).filter(models.Enrollment.course_id == course_id).all()
+    students = [enrollment.student for enrollment in enrollments]
+    return students
+
