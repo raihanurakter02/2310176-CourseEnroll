@@ -177,4 +177,52 @@ def get_enrolled_students(course_id: int, db: Session = Depends(get_db), current
     enrollments = db.query(models.Enrollment).filter(models.Enrollment.course_id == course_id).all()
     students = [enrollment.student for enrollment in enrollments]
     return students
+# --- ADMIN ENDPOINTS ---
+@app.put("/courses/{course_id}", response_model=schemas.CourseResponse)
+def update_course(course_id: int, course_data: schemas.CourseCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    course.course_code = course_data.course_code
+    course.course_name = course_data.course_name
+    course.description = course_data.description
+    course.credit = course_data.credit
+    course.capacity = course_data.capacity
+    db.commit()
+    db.refresh(course)
+    return course
+
+@app.delete("/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_course(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    db.delete(course)
+    db.commit()
+    return None
+
+@app.put("/courses/{course_id}/faculty")
+def assign_faculty(course_id: int, faculty_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    faculty = db.query(models.User).filter(
+        models.User.id == faculty_id, 
+        models.User.role == models.UserRole.faculty
+    ).first()
+    
+    if not course or not faculty:
+        raise HTTPException(status_code=404, detail="Course or valid Faculty not found")
+        
+    course.faculty_id = faculty.id
+    db.commit()
+    return {"message": "Faculty assigned successfully"}
+
+@app.get("/users", response_model=List[schemas.UserResponse])
+def get_all_users(db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    return db.query(models.User).all()
+
+@app.get("/enrollments", response_model=List[schemas.EnrollmentResponse])
+def get_all_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    return db.query(models.Enrollment).all()
 
