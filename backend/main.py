@@ -109,3 +109,35 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db), c
     db.commit()
     db.refresh(new_course)
     return new_course
+# --- STUDENT ENROLLMENT ENDPOINTS ---
+allow_student_only = RoleChecker([models.UserRole.student])
+
+@app.post("/enrollments", response_model=schemas.EnrollmentResponse, status_code=status.HTTP_201_CREATED)
+def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
+    # Verify course exists
+    course = db.query(models.Course).filter(models.Course.id == enrollment.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Prevent duplicate enrollments
+    existing_enrollment = db.query(models.Enrollment).filter(
+        models.Enrollment.course_id == enrollment.course_id,
+        models.Enrollment.student_id == current_user.id
+    ).first()
+    
+    if existing_enrollment:
+        raise HTTPException(status_code=409, detail="You are already enrolled in this course")
+        
+    new_enrollment = models.Enrollment(
+        student_id=current_user.id,
+        course_id=enrollment.course_id
+    )
+    db.add(new_enrollment)
+    db.commit()
+    db.refresh(new_enrollment)
+    return new_enrollment
+
+@app.get("/enrollments/my", response_model=List[schemas.EnrollmentResponse])
+def get_my_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
+    enrollments = db.query(models.Enrollment).filter(models.Enrollment.student_id == current_user.id).all()
+    return enrollments
