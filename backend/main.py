@@ -1,11 +1,12 @@
 import jwt
+from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from backend import auth, models, schemas
 from backend.database import engine, get_db
-from typing import List
+
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
@@ -66,6 +67,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @app.get("/auth/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):  # noqa: B008
     return current_user
+
+
 # --- RBAC DEPENDENCY ---
 class RoleChecker:
     def __init__(self, allowed_roles: List[models.UserRole]):
@@ -79,9 +82,11 @@ class RoleChecker:
             )
         return user
 
+
 # Define role requirements based on proposal
 allow_all_roles = RoleChecker([models.UserRole.student, models.UserRole.faculty, models.UserRole.admin])
 allow_admin_only = RoleChecker([models.UserRole.admin])
+
 
 # --- COURSE ENDPOINTS ---
 @app.get("/courses", response_model=List[schemas.CourseResponse])
@@ -109,6 +114,8 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db), c
     db.commit()
     db.refresh(new_course)
     return new_course
+
+
 # --- STUDENT ENROLLMENT ENDPOINTS ---
 allow_student_only = RoleChecker([models.UserRole.student])
 
@@ -141,7 +148,7 @@ def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends
 def get_my_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
     enrollments = db.query(models.Enrollment).filter(models.Enrollment.student_id == current_user.id).all()
     return enrollments
-# --- ADDITIONAL STUDENT ENDPOINT ---
+
 @app.delete("/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
     enrollment = db.query(models.Enrollment).filter(
@@ -155,6 +162,7 @@ def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user:
     db.delete(enrollment)
     db.commit()
     return None
+
 
 # --- FACULTY ENDPOINTS ---
 allow_faculty_only = RoleChecker([models.UserRole.faculty])
@@ -177,6 +185,8 @@ def get_enrolled_students(course_id: int, db: Session = Depends(get_db), current
     enrollments = db.query(models.Enrollment).filter(models.Enrollment.course_id == course_id).all()
     students = [enrollment.student for enrollment in enrollments]
     return students
+
+
 # --- ADMIN ENDPOINTS ---
 @app.put("/courses/{course_id}", response_model=schemas.CourseResponse)
 def update_course(course_id: int, course_data: schemas.CourseCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
@@ -184,11 +194,12 @@ def update_course(course_id: int, course_data: schemas.CourseCreate, db: Session
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
-    course.course_code = course_data.course_code
-    course.course_name = course_data.course_name
-    course.description = course_data.description
-    course.credit = course_data.credit
-    course.capacity = course_data.capacity
+    course.course_code = course_data.course_code  # type: ignore
+    course.course_name = course_data.course_name  # type: ignore
+    course.description = course_data.description  # type: ignore
+    course.credit = course_data.credit  # type: ignore
+    course.capacity = course_data.capacity  # type: ignore
+    
     db.commit()
     db.refresh(course)
     return course
@@ -225,4 +236,3 @@ def get_all_users(db: Session = Depends(get_db), current_user: models.User = Dep
 @app.get("/enrollments", response_model=List[schemas.EnrollmentResponse])
 def get_all_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
     return db.query(models.Enrollment).all()
-
