@@ -19,6 +19,8 @@ import FacultyCourseDetails from './pages/FacultyCourseDetails';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
+import AdminCourses from './pages/AdminCourses';
+import AdminAssignments from './pages/AdminAssignments';
 
 const Navigation: React.FC = () => {
   const auth = useContext(AuthContext);
@@ -50,6 +52,8 @@ const Navigation: React.FC = () => {
           {auth.user.role === 'admin' && (
             <>
               <Link to="/admin/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
+              <Link to="/admin/courses" style={{ marginRight: '1rem' }}>Manage Courses</Link>
+              <Link to="/admin/assignments" style={{ marginRight: '1rem' }}>Assignments</Link>
             </>
           )}
           
@@ -109,6 +113,16 @@ const App: React.FC = () => {
             <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/courses" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminCourses />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/assignments" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminAssignments />
               </ProtectedRoute>
             } />
 
