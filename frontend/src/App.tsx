@@ -1,12 +1,24 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Public Pages
 import Register from './pages/Register';
 import Login from './pages/Login';
+
+// Student Pages
 import StudentDashboard from './pages/StudentDashboard';
+import StudentCourses from './pages/StudentCourses';
+import StudentMyCourses from './pages/StudentMyCourses';
+
+// Faculty Pages
 import FacultyDashboard from './pages/FacultyDashboard';
+import FacultyCourses from './pages/FacultyCourses';
+import FacultyCourseDetails from './pages/FacultyCourseDetails';
+
+// Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
-import ProtectedRoute from './components/ProtectedRoute';
 
 const Navigation: React.FC = () => {
   const auth = useContext(AuthContext);
@@ -18,7 +30,29 @@ const Navigation: React.FC = () => {
         </>
       ) : (
         <>
-          <span style={{ marginRight: '1rem' }}>Logged in as: {auth.user.role}</span>
+          <span style={{ marginRight: '1rem', fontWeight: 'bold' }}>Role: {auth.user.role}</span>
+          
+          {auth.user.role === 'student' && (
+            <>
+              <Link to="/student/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
+              <Link to="/student/courses" style={{ marginRight: '1rem' }}>Browse Courses</Link>
+              <Link to="/student/my-courses" style={{ marginRight: '1rem' }}>My Enrollments</Link>
+            </>
+          )}
+          
+          {auth.user.role === 'faculty' && (
+            <>
+              <Link to="/faculty/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
+              <Link to="/faculty/courses" style={{ marginRight: '1rem' }}>My Assigned Courses</Link>
+            </>
+          )}
+
+          {auth.user.role === 'admin' && (
+            <>
+              <Link to="/admin/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
+            </>
+          )}
+          
           <button onClick={auth.logout}>Logout</button>
         </>
       )}
@@ -33,27 +67,52 @@ const App: React.FC = () => {
         <Navigation />
         <div style={{ padding: '1rem' }}>
           <Routes>
+            {/* Public Routes */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             
+            {/* Student Protected Routes */}
             <Route path="/student/dashboard" element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/student/courses" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentCourses />
+              </ProtectedRoute>
+            } />
+            <Route path="/student/my-courses" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentMyCourses />
+              </ProtectedRoute>
+            } />
             
+            {/* Faculty Protected Routes */}
             <Route path="/faculty/dashboard" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <FacultyDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/faculty/courses" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <FacultyCourses />
+              </ProtectedRoute>
+            } />
+            <Route path="/faculty/courses/:id" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <FacultyCourseDetails />
+              </ProtectedRoute>
+            } />
             
+            {/* Admin Protected Routes */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
 
+            {/* Default Routes */}
             <Route path="/" element={<h2>Welcome to CourseEnroll</h2>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
