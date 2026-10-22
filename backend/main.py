@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from backend import auth, models, schemas
 from backend.database import engine, get_db
-
+from typing import List
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
@@ -66,3 +66,46 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @app.get("/auth/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):  # noqa: B008
     return current_user
+# --- RBAC DEPENDENCY ---
+class RoleChecker:
+    def __init__(self, allowed_roles: List[models.UserRole]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, user: models.User = Depends(get_current_user)):  # noqa: B008
+        if user.role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Operation not permitted for your role"
+            )
+        return user
+
+# Define role requirements based on proposal
+allow_all_roles = RoleChecker([models.UserRole.student, models.UserRole.faculty, models.UserRole.admin])
+allow_admin_only = RoleChecker([models.UserRole.admin])
+
+# --- COURSE ENDPOINTS ---
+@app.get("/courses", response_model=List[schemas.CourseResponse])
+def get_courses(db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
+    courses = db.query(models.Course).all()
+    return courses
+
+@app.get("/courses/{course_id}", response_model=schemas.CourseResponse)
+def get_course(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+@app.post("/courses", response_model=schemas.CourseResponse, status_code=status.HTTP_201_CREATED)
+def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    new_course = models.Course(
+        course_code=course.course_code,
+        course_name=course.course_name,
+        description=course.description,
+        credit=course.credit,
+        capacity=course.capacity
+    )
+    db.add(new_course)
+    db.commit()
+    db.refresh(new_course)
+    return new_course
