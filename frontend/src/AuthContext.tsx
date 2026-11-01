@@ -12,7 +12,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string) => void;
+  login: (token: string, user: User) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -25,19 +25,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      api.get('/auth/me')
+    if (token && !user) {
+      // Explicitly attaching the token guarantees it bypasses any interceptor bugs
+      api.get('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then(response => setUser(response.data))
         .catch(() => logout())
         .finally(() => setLoading(false));
-    } else {
+    } else if (!token) {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, user]);
 
-  const login = (newToken: string) => {
+  const login = (newToken: string, userData: User) => {
     localStorage.setItem('access_token', newToken);
     setToken(newToken);
+    setUser(userData);
   };
 
   const logout = () => {

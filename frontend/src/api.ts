@@ -1,17 +1,20 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Replace the old http://127.0.0.1:8000 or '/api' with your live Render URL
   baseURL: 'https://two310176-courseenroll.onrender.com', 
 });
 
-// If you have interceptors for your auth token, leave them exactly as they are below
+// This intercepts EVERY request and securely attaches your login token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  // We check both common keys just in case your AuthContext uses a different one
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export default api;
