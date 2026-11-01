@@ -27,13 +27,22 @@ const Login: React.FC = () => {
       params.append('username', email);
       params.append('password', password);
 
+      // 1. Authenticate and get the token
       const response = await api.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const actualRole = String(response.data.role).toLowerCase();
+      const token = response.data.access_token;
 
-      // Strictly enforce that the selected role tab matches the user's account role
+      // 2. Fetch user profile explicitly using the new token to prevent race conditions
+      const userResponse = await api.get('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const userData = userResponse.data;
+      const actualRole = String(userData.role).toLowerCase();
+
+      // 3. Verify role selection matches the database
       if (actualRole !== selectedRole) {
         toast?.showToast(
           `Role mismatch! This account is registered as "${actualRole.toUpperCase()}", not "${selectedRole.toUpperCase()}". Please select the ${actualRole} tab.`,
@@ -43,8 +52,11 @@ const Login: React.FC = () => {
         return;
       }
 
-      auth?.login(response.data.access_token);
+      // 4. Update the global context with BOTH token and user data simultaneously
+      auth?.login(token, userData);
       toast?.showToast(`Successfully logged in as ${actualRole}`, 'success');
+      
+      // 5. Navigate safely now that the app knows exactly who is logged in
       navigate(`/${actualRole}/dashboard`);
     } catch (err: any) {
       toast?.showToast(err.response?.data?.detail || 'Invalid email or password', 'error');
