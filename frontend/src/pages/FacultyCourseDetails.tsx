@@ -16,15 +16,12 @@ const FacultyCourseDetails: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
-  // Grading State
   const [gradingStudent, setGradingStudent] = useState<Enrollment | null>(null);
   const [selectedGrade, setSelectedGrade] = useState('A');
   
-  // Attendance State
   const [selectedSessionId, setSelectedSessionId] = useState<number | ''>('');
   const [attendanceRecords, setAttendanceRecords] = useState<Record<number, string>>({});
   
-  // Report State
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [historyStudent, setHistoryStudent] = useState<Enrollment | null>(null);
 
@@ -49,9 +46,7 @@ const FacultyCourseDetails: React.FC = () => {
     api.get(`/faculty/courses/${id}/attendance?session_id=${selectedSessionId}`)
       .then(res => {
         const records: Record<number, string> = {};
-        // Default everyone to present so submissions don't fail if unchanged
         enrollments.forEach(e => { records[e.id] = 'present'; });
-        // Override with actual data from DB
         res.data.forEach((att: any) => { records[att.enrollment_id] = att.status; });
         setAttendanceRecords(records);
       })
@@ -114,10 +109,6 @@ const FacultyCourseDetails: React.FC = () => {
     const total = records.length;
     const percentage = total === 0 ? 0 : Math.round(((present + (late * 0.5)) / total) * 100);
     return { present, late, absent, total, percentage, records };
-  };
-
-  const handleDateClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    try { (e.target as HTMLInputElement).showPicker(); } catch {}
   };
 
   if (isLoading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Loading course data...</div>;
