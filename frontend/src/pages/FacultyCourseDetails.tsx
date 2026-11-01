@@ -116,10 +116,6 @@ const FacultyCourseDetails: React.FC = () => {
     return { present, late, absent, total, percentage, records };
   };
 
-  const handleDateClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    try { (e.target as HTMLInputElement).showPicker(); } catch {}
-  };
-
   if (isLoading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Loading course data...</div>;
 
   return (
