@@ -1,35 +1,29 @@
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard: React.FC = () => {
-  const auth = useContext(AuthContext);
+  const navigate = useNavigate();
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Student Portal</h1>
-        <p>Manage your academic journey, browse catalogs, and track active enrollments.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1>Student Dashboard</h1>
+          <p>Welcome to your portal. Browse courses, manage enrollments, and track your academic progress.</p>
+        </div>
+        <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/student/courses')}>
+          View Course Catalog
+        </button>
       </div>
-
-      <div className="course-grid">
-        <div className="course-card" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 100%)' }}>
-          <span className="course-code">Catalog</span>
-          <h3 className="course-title">Browse Courses</h3>
-          <p className="course-desc">Explore available university courses, check capacities, and enroll instantly.</p>
-          <Link to="/student/courses" style={{ textDecoration: 'none', marginTop: 'auto' }}>
-            <button className="btn-primary">View Catalog →</button>
-          </Link>
-        </div>
-
-        <div className="course-card" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' }}>
-          <span className="course-code" style={{ background: '#d1fae5', color: '#059669' }}>Schedule</span>
-          <h3 className="course-title">My Enrollments</h3>
-          <p className="course-desc">View your active semester schedule and manage course drops if needed.</p>
-          <Link to="/student/my-courses" style={{ textDecoration: 'none', marginTop: 'auto' }}>
-            <button className="btn-primary" style={{ background: '#059669' }}>View Schedule →</button>
-          </Link>
-        </div>
+      
+      <div className="course-card" style={{ textAlign: 'center', padding: '4rem 2rem', marginTop: '2rem' }}>
+        <h3 style={{ marginBottom: '1rem', fontSize: '1.4rem' }}>Ready to enroll?</h3>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', maxWidth: '400px', margin: '0 auto 2rem' }}>
+          Explore available classes for the active semester and submit your enrollment requests.
+        </p>
+        <button className="btn-outline" style={{ width: 'auto' }} onClick={() => navigate('/student/courses')}>
+          Browse Catalog
+        </button>
       </div>
     </div>
   );
