@@ -1,29 +1,26 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../AuthContext';
 
 const FacultyDashboard: React.FC = () => {
-  const navigate = useNavigate();
+  const auth = useContext(AuthContext);
 
   return (
     <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1>Faculty Dashboard</h1>
-          <p>Welcome to your portal. Manage your courses, class rosters, and official attendance here.</p>
-        </div>
-        <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/faculty/courses')}>
-          View Assigned Courses
-        </button>
+      <div className="page-header">
+        <h1>Faculty Portal</h1>
+        <p>Manage your assigned classes, review student lists, and oversee course rosters.</p>
       </div>
-      
-      <div className="course-card" style={{ textAlign: 'center', padding: '4rem 2rem', marginTop: '2rem' }}>
-        <h3 style={{ marginBottom: '1rem', fontSize: '1.4rem' }}>Ready for the semester?</h3>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', maxWidth: '400px', margin: '0 auto 2rem' }}>
-          Access your assigned classes to review your roster, submit official grades, and track class session attendance.
-        </p>
-        <button className="btn-outline" style={{ width: 'auto' }} onClick={() => navigate('/faculty/courses')}>
-          Go to Course Management
-        </button>
+
+      <div className="course-grid">
+        <div className="course-card" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 100%)' }}>
+          <span className="course-code">Classes</span>
+          <h3 className="course-title">Assigned Classes</h3>
+          <p className="course-desc">View all courses assigned to you by the administration and access student rosters.</p>
+          <Link to="/faculty/courses" style={{ textDecoration: 'none', marginTop: 'auto' }}>
+            <button className="btn-primary">View My Classes →</button>
+          </Link>
+        </div>
       </div>
     </div>
   );
