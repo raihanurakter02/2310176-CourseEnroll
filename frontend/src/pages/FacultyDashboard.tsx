@@ -26,4 +26,4 @@ const FacultyDashboard: React.FC = () => {
   );
 };
 
-export default FacultyDashboard;
+export default FacultyDashboard; 
