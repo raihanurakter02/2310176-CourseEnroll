@@ -3,7 +3,18 @@ import api from '../api';
 import Modal from '../components/Modal';
 import { ToastContext } from '../ToastContext';
 
-interface Course { id: number; course_code: string; course_name: string; capacity: number; credit: number; description: string; }
+interface Course { 
+  id: number; 
+  course_code: string; 
+  course_name: string; 
+  capacity: number; 
+  credit: number; 
+  description: string; 
+  schedule_days?: string;
+  start_time?: string;
+  end_time?: string;
+  room?: string;
+}
 interface ClassSession { id: number; date: string; topic: string | null; }
 
 const AdminCourses: React.FC = () => {
@@ -13,7 +24,17 @@ const AdminCourses: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<number | null>(null);
-  const [formState, setFormState] = useState({ course_code: '', course_name: '', description: '', credit: 3, capacity: 40 });
+  const [formState, setFormState] = useState({ 
+    course_code: '', 
+    course_name: '', 
+    description: '', 
+    credit: 3, 
+    capacity: 40,
+    schedule_days: 'Mon,Wed',
+    start_time: '10:00',
+    end_time: '11:30',
+    room: 'Hall 101'
+  });
 
   const [scheduleCourse, setScheduleCourse] = useState<Course | null>(null);
   const [courseSessions, setCourseSessions] = useState<ClassSession[]>([]);
@@ -34,7 +55,17 @@ const AdminCourses: React.FC = () => {
     try {
       await api.post('/courses', { ...formState, capacity: Number(formState.capacity) || 40, credit: Number(formState.credit) || 3 });
       toast?.showToast('Course created successfully', 'success');
-      setFormState({ course_code: '', course_name: '', description: '', credit: 3, capacity: 40 });
+      setFormState({ 
+        course_code: '', 
+        course_name: '', 
+        description: '', 
+        credit: 3, 
+        capacity: 40,
+        schedule_days: 'Mon,Wed',
+        start_time: '10:00',
+        end_time: '11:30',
+        room: 'Hall 101'
+      });
       setIsCreateModalOpen(false);
       fetchCourses();
     } catch (err: any) {
@@ -140,6 +171,14 @@ const AdminCourses: React.FC = () => {
             <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Credits</label><input type="number" min="1" required value={formState.credit} onChange={e => setFormState({ ...formState, credit: Number(e.target.value) })} /></div>
             <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Capacity</label><input type="number" min="1" required value={formState.capacity} onChange={e => setFormState({ ...formState, capacity: Number(e.target.value) })} /></div>
           </div>
+          <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+            <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Schedule Days</label><input value={formState.schedule_days} onChange={e => setFormState({ ...formState, schedule_days: e.target.value })} placeholder="e.g. Mon,Wed" /></div>
+            <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Room / Venue</label><input value={formState.room} onChange={e => setFormState({ ...formState, room: e.target.value })} placeholder="Hall 101" /></div>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+            <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Start Time (HH:MM)</label><input value={formState.start_time} onChange={e => setFormState({ ...formState, start_time: e.target.value })} placeholder="10:00" /></div>
+            <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>End Time (HH:MM)</label><input value={formState.end_time} onChange={e => setFormState({ ...formState, end_time: e.target.value })} placeholder="11:30" /></div>
+          </div>
           <button type="submit" className="btn-primary" disabled={isActionLoading}>{isActionLoading ? 'Creating...' : 'Create Course'}</button>
         </form>
       </Modal>
@@ -154,6 +193,14 @@ const AdminCourses: React.FC = () => {
             <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
               <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Credits</label><input type="number" min="1" required value={editingCourse.credit} onChange={e => setEditingCourse({ ...editingCourse, credit: Number(e.target.value) })} /></div>
               <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Capacity</label><input type="number" min="1" required value={editingCourse.capacity} onChange={e => setEditingCourse({ ...editingCourse, capacity: Number(e.target.value) })} /></div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Schedule Days</label><input value={editingCourse.schedule_days || ''} onChange={e => setEditingCourse({ ...editingCourse, schedule_days: e.target.value })} placeholder="Mon,Wed" /></div>
+              <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Room / Venue</label><input value={editingCourse.room || ''} onChange={e => setEditingCourse({ ...editingCourse, room: e.target.value })} placeholder="Hall 101" /></div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>Start Time (HH:MM)</label><input value={editingCourse.start_time || ''} onChange={e => setEditingCourse({ ...editingCourse, start_time: e.target.value })} placeholder="10:00" /></div>
+              <div className="form-group" style={{ flex: 1, minWidth: 0 }}><label>End Time (HH:MM)</label><input value={editingCourse.end_time || ''} onChange={e => setEditingCourse({ ...editingCourse, end_time: e.target.value })} placeholder="11:30" /></div>
             </div>
             <button type="submit" className="btn-primary" disabled={isActionLoading}>{isActionLoading ? 'Saving...' : 'Save Changes'}</button>
           </form>
