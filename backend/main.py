@@ -1229,6 +1229,7 @@ def revoke_session(
 
 
 @app.post("/admin/security/users/{user_id}/ban")
+@app.post("/admin/users/{user_id}/ban")
 def ban_user(
     user_id: int,
     ban_data: schemas.BanRequest,
@@ -1276,6 +1277,7 @@ def ban_user(
 
 
 @app.post("/admin/security/users/{user_id}/unban")
+@app.post("/admin/users/{user_id}/unban")
 def unban_user(
     user_id: int,
     request: Request,

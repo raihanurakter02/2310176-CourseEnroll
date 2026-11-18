@@ -19,6 +19,10 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    is_banned: bool = False
+    ban_reason: Optional[str] = None
+    login_attempts: Optional[int] = 0
+
     class Config:
         from_attributes = True
 

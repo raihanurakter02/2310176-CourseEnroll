@@ -317,6 +317,8 @@ const AdminSecurity: React.FC = () => {
       setBanModalUser(null);
       setBanReason('');
       fetchUsers();
+      fetchStats();
+      fetchEvents();
     } catch {
       toast?.showToast('Failed to ban user', 'error');
     } finally {
@@ -330,6 +332,8 @@ const AdminSecurity: React.FC = () => {
       await api.post(`/admin/security/users/${user.id}/unban`);
       toast?.showToast(`${user.name} has been unbanned`, 'success');
       fetchUsers();
+      fetchStats();
+      fetchEvents();
     } catch {
       toast?.showToast('Failed to unban user', 'error');
     } finally {

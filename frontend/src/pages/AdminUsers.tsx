@@ -4,7 +4,14 @@ import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
 
-interface User { id: number; name: string; email: string; role: string; }
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  is_banned?: boolean;
+  ban_reason?: string | null;
+}
 
 const AdminUsers: React.FC = () => {
   const cachedUsers = getCachedData<User[]>('/users');
@@ -16,6 +23,9 @@ const AdminUsers: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [banModalUser, setBanModalUser] = useState<User | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [unbanLoadingId, setUnbanLoadingId] = useState<number | null>(null);
   
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'student' });
   const toast = useContext(ToastContext);
@@ -68,6 +78,38 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleBan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!banModalUser) return;
+    setIsActionLoading(true);
+    try {
+      await api.post(`/admin/security/users/${banModalUser.id}/ban`, {
+        ban_reason: banReason || 'Violation of acceptable use policy'
+      });
+      toast?.showToast(`${banModalUser.name} has been banned`, 'success');
+      setBanModalUser(null);
+      setBanReason('');
+      fetchUsers();
+    } catch (err: any) {
+      toast?.showToast(err.response?.data?.detail || 'Failed to ban user', 'error');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleUnban = async (user: User) => {
+    setUnbanLoadingId(user.id);
+    try {
+      await api.post(`/admin/security/users/${user.id}/unban`);
+      toast?.showToast(`${user.name} has been unbanned successfully!`, 'success');
+      fetchUsers();
+    } catch (err: any) {
+      toast?.showToast(err.response?.data?.detail || 'Failed to unban user', 'error');
+    } finally {
+      setUnbanLoadingId(null);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!userToDelete) return;
     setIsActionLoading(true);
@@ -102,12 +144,13 @@ const AdminUsers: React.FC = () => {
               <th style={{ padding: '1rem 1.5rem' }}>Name</th>
               <th style={{ padding: '1rem 1.5rem' }}>Email</th>
               <th style={{ padding: '1rem 1.5rem' }}>Role</th>
+              <th style={{ padding: '1rem 1.5rem' }}>Status</th>
               <th style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {isPageLoading ? (
-              <tr><td colSpan={4} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
+              <tr><td colSpan={5} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
             ) : (
               users.map(user => (
                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -118,8 +161,35 @@ const AdminUsers: React.FC = () => {
                       {user.role}
                     </span>
                   </td>
+                  <td style={{ padding: '1.25rem 1.5rem' }}>
+                    {user.is_banned ? (
+                      <span style={{
+                        background: '#fee2e2',
+                        color: '#991b1b',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        border: '1px solid #fecaca'
+                      }}>
+                        🚫 Banned
+                      </span>
+                    ) : (
+                      <span style={{
+                        background: '#d1fae5',
+                        color: '#065f46',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        border: '1px solid #a7f3d0'
+                      }}>
+                        ✅ Active
+                      </span>
+                    )}
+                  </td>
                   <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <button 
                         className="btn-outline" 
                         style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} 
@@ -127,6 +197,43 @@ const AdminUsers: React.FC = () => {
                       >
                         Edit
                       </button>
+
+                      {user.role !== 'admin' && (
+                        user.is_banned ? (
+                          <button 
+                            className="btn-outline" 
+                            style={{ 
+                              width: 'auto', 
+                              padding: '0.4rem 0.8rem', 
+                              fontSize: '0.85rem', 
+                              color: '#059669', 
+                              borderColor: '#a7f3d0',
+                              fontWeight: 600,
+                              background: '#f0fdf4'
+                            }} 
+                            onClick={() => handleUnban(user)}
+                            disabled={unbanLoadingId === user.id}
+                          >
+                            {unbanLoadingId === user.id ? 'Unbanning...' : '🔓 Unban'}
+                          </button>
+                        ) : (
+                          <button 
+                            className="btn-outline" 
+                            style={{ 
+                              width: 'auto', 
+                              padding: '0.4rem 0.8rem', 
+                              fontSize: '0.85rem', 
+                              color: '#ea580c', 
+                              borderColor: '#fed7aa',
+                              fontWeight: 600
+                            }} 
+                            onClick={() => { setBanModalUser(user); setBanReason(''); }}
+                          >
+                            🚫 Ban
+                          </button>
+                        )
+                      )}
+
                       {user.role !== 'admin' && (
                         <button 
                           className="btn-outline" 
@@ -216,6 +323,37 @@ const AdminUsers: React.FC = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Ban User Modal */}
+      <Modal isOpen={banModalUser !== null} onClose={() => setBanModalUser(null)} title="Ban User Account">
+        {banModalUser && (
+          <form onSubmit={handleBan}>
+            <div style={{ marginBottom: '1.25rem', background: '#fef2f2', border: '1px solid #fee2e2', padding: '0.85rem', borderRadius: '6px' }}>
+              <p style={{ margin: 0, color: '#991b1b', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                Are you sure you want to suspend <strong>{banModalUser.name}</strong> ({banModalUser.email})?
+                Their active sessions will be terminated and they will be blocked from accessing the system immediately.
+              </p>
+            </div>
+            <div className="form-group">
+              <label>Suspension Reason</label>
+              <input
+                required
+                value={banReason}
+                onChange={e => setBanReason(e.target.value)}
+                placeholder="e.g. Terms of service violation, academic misconduct"
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button type="button" className="btn-outline" onClick={() => setBanModalUser(null)} disabled={isActionLoading}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" style={{ background: '#dc2626' }} disabled={isActionLoading}>
+                {isActionLoading ? 'Banning...' : 'Confirm Ban'}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
