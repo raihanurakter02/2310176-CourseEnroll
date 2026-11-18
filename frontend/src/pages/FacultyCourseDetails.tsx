@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Enrollment {
@@ -242,54 +243,55 @@ const FacultyCourseDetails: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '2px solid var(--border)', paddingBottom: '0.75rem' }}>
-        <button 
-          className={`btn-outline ${activeTab === 'roster' ? 'active' : ''}`} 
-          style={{ width: 'auto', border: 'none', background: activeTab === 'roster' ? 'var(--accent-yellow)' : 'transparent', color: 'var(--text-main)', fontWeight: activeTab === 'roster' ? 700 : 500 }} 
-          onClick={() => setActiveTab('roster')}
-        >
-          👥 Roster & Grading ({enrollments.length})
-        </button>
-        <button 
-          className={`btn-outline ${activeTab === 'attendance' ? 'active' : ''}`} 
-          style={{ width: 'auto', border: 'none', background: activeTab === 'attendance' ? 'var(--accent-yellow)' : 'transparent', color: 'var(--text-main)', fontWeight: activeTab === 'attendance' ? 700 : 500 }} 
-          onClick={() => setActiveTab('attendance')}
-        >
-          📋 Session Attendance
-        </button>
-        <button 
-          className={`btn-outline ${activeTab === 'report' ? 'active' : ''}`} 
-          style={{ width: 'auto', border: 'none', background: activeTab === 'report' ? 'var(--accent-yellow)' : 'transparent', color: 'var(--text-main)', fontWeight: activeTab === 'report' ? 700 : 500 }} 
-          onClick={() => setActiveTab('report')}
-        >
-          📊 Attendance Report & Analytics
-        </button>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div className="premium-pill-group">
+          <button 
+            type="button"
+            className={`premium-pill-btn ${activeTab === 'roster' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('roster')}
+          >
+            <span>👥 Roster & Grading</span>
+            <span className="premium-pill-badge">{enrollments.length}</span>
+          </button>
+          <button 
+            type="button"
+            className={`premium-pill-btn ${activeTab === 'attendance' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('attendance')}
+          >
+            <span>📋 Session Attendance</span>
+          </button>
+          <button 
+            type="button"
+            className={`premium-pill-btn ${activeTab === 'report' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('report')}
+          >
+            <span>📊 Attendance Analytics</span>
+          </button>
+        </div>
       </div>
 
       {/* Quick Search Toolbar for Enrolled Students */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 280px', position: 'relative' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search enrolled student by name or email..."
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search enrolled student by name or email..."
             value={studentSearch}
-            onChange={e => setStudentSearch(e.target.value)}
-            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+            onChange={setStudentSearch}
           />
+          {studentSearch && (
+            <button 
+              type="button" 
+              className="premium-reset-btn"
+              onClick={() => setStudentSearch('')}
+            >
+              ✕ Clear Search
+            </button>
+          )}
         </div>
-        {studentSearch && (
-          <button 
-            type="button" 
-            className="btn-outline" 
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
-            onClick={() => setStudentSearch('')}
-          >
-            ✕ Clear
-          </button>
-        )}
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-          Showing <strong>{filteredEnrollments.length}</strong> of {enrollments.length} students
-        </span>
+        <div className="premium-count-badge">
+          <span>Students:</span>
+          <strong>{filteredEnrollments.length}</strong> of {enrollments.length}
+        </div>
       </div>
 
       {/* TAB 1: ROSTER & GRADING */}

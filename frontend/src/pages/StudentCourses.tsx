@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Course {
@@ -116,57 +117,55 @@ const StudentCourses: React.FC = () => {
       </div>
 
       {/* Search and Filters Toolbar */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 240px', position: 'relative' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search course code, title, topic or room..."
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search course code, title, topic or room..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem', margin: 0 }}
+            onChange={setSearchQuery}
           />
+
+          <select
+            className={`premium-filter-select ${availabilityFilter !== 'all' ? 'active-filter' : ''}`}
+            value={availabilityFilter}
+            onChange={e => setAvailabilityFilter(e.target.value as any)}
+          >
+            <option value="all">All Availability</option>
+            <option value="available">🟢 Seats Available</option>
+            <option value="waitlist">⏳ Waitlist Only</option>
+          </select>
+
+          <select
+            className={`premium-filter-select ${creditFilter !== 'all' ? 'active-filter' : ''}`}
+            value={creditFilter}
+            onChange={e => setCreditFilter(e.target.value)}
+          >
+            <option value="all">All Credits</option>
+            <option value="1">1 Credit</option>
+            <option value="2">2 Credits</option>
+            <option value="3">3 Credits</option>
+            <option value="4">4 Credits</option>
+          </select>
+
+          {(searchQuery || availabilityFilter !== 'all' || creditFilter !== 'all') && (
+            <button
+              type="button"
+              className="premium-reset-btn"
+              onClick={() => {
+                setSearchQuery('');
+                setAvailabilityFilter('all');
+                setCreditFilter('all');
+              }}
+            >
+              ✕ Reset Filters
+            </button>
+          )}
         </div>
 
-        <select
-          value={availabilityFilter}
-          onChange={e => setAvailabilityFilter(e.target.value as any)}
-          style={{ width: 'auto', minWidth: '150px', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
-        >
-          <option value="all">All Availability</option>
-          <option value="available">🟢 Seats Available</option>
-          <option value="waitlist">⏳ Waitlist Only</option>
-        </select>
-
-        <select
-          value={creditFilter}
-          onChange={e => setCreditFilter(e.target.value)}
-          style={{ width: 'auto', minWidth: '120px', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
-        >
-          <option value="all">All Credits</option>
-          <option value="1">1 Credit</option>
-          <option value="2">2 Credits</option>
-          <option value="3">3 Credits</option>
-          <option value="4">4 Credits</option>
-        </select>
-
-        {(searchQuery || availabilityFilter !== 'all' || creditFilter !== 'all') && (
-          <button
-            type="button"
-            className="btn-outline"
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
-            onClick={() => {
-              setSearchQuery('');
-              setAvailabilityFilter('all');
-              setCreditFilter('all');
-            }}
-          >
-            ✕ Reset
-          </button>
-        )}
-
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-          Showing <strong>{filteredCourses.length}</strong> of {courses.length} courses
-        </span>
+        <div className="premium-count-badge">
+          <span>Catalog:</span>
+          <strong>{filteredCourses.length}</strong> of {courses.length} courses
+        </div>
       </div>
 
       <div className="course-grid">

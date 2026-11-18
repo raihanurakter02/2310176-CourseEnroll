@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Course {
@@ -183,82 +184,51 @@ const StudentMyCourses: React.FC = () => {
         </div>
       )}
 
-      {/* Search & Filter Toolbar */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 260px', position: 'relative' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search enrolled courses by code, title, or room..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
-          />
+      {/* Filter Tabs */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div className="premium-pill-group">
+          {[
+            { key: 'all', label: 'All Records', count: counts.all },
+            { key: 'approved', label: 'Enrolled (Active)', count: counts.approved },
+            { key: 'waitlisted', label: 'Waitlisted', count: counts.waitlisted },
+            { key: 'pending', label: 'Pending Review', count: counts.pending },
+            { key: 'rejected', label: 'Rejected', count: counts.rejected },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`premium-pill-btn ${activeFilter === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveFilter(tab.key as FilterTab)}
+            >
+              <span>{tab.label}</span>
+              <span className="premium-pill-badge">{tab.count}</span>
+            </button>
+          ))}
         </div>
-        {searchQuery && (
-          <button 
-            type="button" 
-            className="btn-outline" 
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
-            onClick={() => setSearchQuery('')}
-          >
-            ✕ Clear
-          </button>
-        )}
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-          Showing <strong>{filteredEnrollments.length}</strong> of {enrollments.length} records
-        </span>
       </div>
 
-      {/* Filter Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        borderBottom: '2px solid var(--border)',
-        marginBottom: '1.75rem',
-        overflowX: 'auto',
-        paddingBottom: '2px'
-      }}>
-        {[
-          { key: 'all', label: 'All Records', count: counts.all },
-          { key: 'approved', label: 'Enrolled (Active)', count: counts.approved },
-          { key: 'waitlisted', label: 'Waitlisted', count: counts.waitlisted },
-          { key: 'pending', label: 'Pending Review', count: counts.pending },
-          { key: 'rejected', label: 'Rejected', count: counts.rejected },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveFilter(tab.key as FilterTab)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeFilter === tab.key ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-              marginBottom: '-2px',
-              padding: '0.6rem 0.9rem',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: activeFilter === tab.key ? 700 : 500,
-              fontSize: '0.875rem',
-              color: activeFilter === tab.key ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'color 0.15s, border-color 0.15s'
-            }}
-          >
-            <span>{tab.label}</span>
-            <span style={{
-              background: activeFilter === tab.key ? 'var(--focus-yellow)' : '#f1f5f9',
-              color: activeFilter === tab.key ? 'var(--text-main)' : 'var(--text-muted)',
-              borderRadius: '12px',
-              padding: '0.1rem 0.45rem',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+      {/* Search & Filter Toolbar */}
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search enrolled courses by code, title, or room..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
+          {searchQuery && (
+            <button 
+              type="button" 
+              className="premium-reset-btn"
+              onClick={() => setSearchQuery('')}
+            >
+              ✕ Clear Search
+            </button>
+          )}
+        </div>
+        <div className="premium-count-badge">
+          <span>Enrollments:</span>
+          <strong>{filteredEnrollments.length}</strong> of {enrollments.length} records
+        </div>
       </div>
 
       <div className="course-grid">

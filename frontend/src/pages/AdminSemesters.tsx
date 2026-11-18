@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Semester {
@@ -96,41 +97,42 @@ const AdminSemesters: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 240px' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search semester name..."
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search semester name..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem', margin: 0 }}
+            onChange={setSearchQuery}
           />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value as any)}
-          style={{ width: 'auto', minWidth: '150px', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
-        >
-          <option value="all">All Statuses</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
-        </select>
-        {(searchQuery || statusFilter !== 'all') && (
-          <button
-            type="button"
-            className="btn-outline"
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
-            onClick={() => {
-              setSearchQuery('');
-              setStatusFilter('all');
-            }}
+
+          <select
+            className={`premium-filter-select ${statusFilter !== 'all' ? 'active-filter' : ''}`}
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as any)}
           >
-            ✕ Reset
-          </button>
-        )}
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-          Showing <strong>{filteredSemesters.length}</strong> of {semesters.length} semesters
-        </span>
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+
+          {(searchQuery || statusFilter !== 'all') && (
+            <button
+              type="button"
+              className="premium-reset-btn"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+              }}
+            >
+              ✕ Reset Filters
+            </button>
+          )}
+        </div>
+
+        <div className="premium-count-badge">
+          <span>Semesters:</span>
+          <strong>{filteredSemesters.length}</strong> of {semesters.length}
+        </div>
       </div>
 
       <div className="course-grid">

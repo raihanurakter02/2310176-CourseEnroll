@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Announcement {
@@ -120,18 +121,9 @@ const AnnouncementsInbox: React.FC = () => {
         )}
       </div>
 
-      {/* Search and Tabs Bar */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        borderBottom: '2px solid var(--border)',
-        paddingBottom: '2px'
-      }}>
-        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
+      {/* Filter Tabs and Search Bar */}
+      <div className="premium-filter-bar" style={{ marginTop: '0.5rem' }}>
+        <div className="premium-pill-group">
           {[
             { key: 'all', label: 'All Notices', count: announcements.length },
             { key: 'unread', label: 'Unread', count: unreadCount },
@@ -139,56 +131,36 @@ const AnnouncementsInbox: React.FC = () => {
           ].map(tab => (
             <button
               key={tab.key}
+              type="button"
+              className={`premium-pill-btn ${activeTab === tab.key ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.key as any)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === tab.key ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                marginBottom: '-2px',
-                padding: '0.6rem 0.9rem',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: activeTab === tab.key ? 700 : 500,
-                fontSize: '0.875rem',
-                color: activeTab === tab.key ? 'var(--primary)' : 'var(--text-muted)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease'
-              }}
             >
               <span>{tab.label}</span>
-              <span style={{
-                background: activeTab === tab.key ? 'var(--focus-yellow)' : '#f1f5f9',
-                color: activeTab === tab.key ? 'var(--text-main)' : 'var(--text-muted)',
-                borderRadius: '12px',
-                padding: '0.1rem 0.45rem',
-                fontSize: '0.75rem',
-                fontWeight: 700
-              }}>
-                {tab.count}
-              </span>
+              <span className="premium-pill-badge">{tab.count}</span>
             </button>
           ))}
         </div>
 
-        <div style={{ width: '260px', minWidth: '200px' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search announcements..."
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flex: '1 1 260px', justifyContent: 'flex-end' }}>
+          <SearchInput
+            placeholder="Search announcements by title or content..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.85rem',
-              border: '1.5px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              background: '#fff',
-              outline: 'none'
-            }}
+            onChange={setSearchQuery}
+            style={{ maxWidth: '320px' }}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              className="premium-reset-btn"
+              onClick={() => setSearchQuery('')}
+            >
+              ✕ Clear
+            </button>
+          )}
+          <div className="premium-count-badge">
+            <span>Showing:</span>
+            <strong>{filteredAnnouncements.length}</strong> of {announcements.length}
+          </div>
         </div>
       </div>
 

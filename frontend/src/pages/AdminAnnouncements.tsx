@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Announcement {
@@ -153,35 +154,18 @@ const AdminAnnouncements: React.FC = () => {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.75rem',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '1.25rem',
-        background: 'var(--surface)',
-        padding: '0.85rem 1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search announcements by title or content..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search announcements by title or content..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
 
           <select
+            className={`premium-filter-select ${audienceFilter !== 'all' ? 'active-filter' : ''}`}
             value={audienceFilter}
             onChange={e => setAudienceFilter(e.target.value as any)}
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
           >
             <option value="all">All Audiences</option>
             <option value="student">Students Only</option>
@@ -189,9 +173,9 @@ const AdminAnnouncements: React.FC = () => {
           </select>
 
           <select
+            className={`premium-filter-select ${priorityFilter !== 'all' ? 'active-filter' : ''}`}
             value={priorityFilter}
             onChange={e => setPriorityFilter(e.target.value as any)}
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
           >
             <option value="all">All Priorities</option>
             <option value="normal">Normal</option>
@@ -201,17 +185,18 @@ const AdminAnnouncements: React.FC = () => {
 
           {(searchQuery || audienceFilter !== 'all' || priorityFilter !== 'all') && (
             <button
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              type="button"
+              className="premium-reset-btn"
               onClick={() => { setSearchQuery(''); setAudienceFilter('all'); setPriorityFilter('all'); }}
             >
-              Reset
+              ✕ Reset Filters
             </button>
           )}
         </div>
 
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-          Showing <strong>{filteredAnnouncements.length}</strong> of {announcements.length} notices
+        <div className="premium-count-badge">
+          <span>Notices:</span>
+          <strong>{filteredAnnouncements.length}</strong> of {announcements.length}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState, useCallback, useMemo } from 're
 import api, { getCachedData } from '../api';
 import { ToastContext } from '../ToastContext';
 import Modal from '../components/Modal';
+import SearchInput from '../components/SearchInput';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -507,34 +508,32 @@ const AdminSecurity: React.FC = () => {
 
   const renderSessions = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ flex: '1 1 240px', minWidth: '220px' }}>
-          <input
-            type="text"
-            placeholder="🔍 Search session by user, email, IP, or device..."
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search session by user, email, IP, or device..."
             value={sessionSearch}
-            onChange={e => setSessionSearch(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
+            onChange={setSessionSearch}
           />
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {sessionSearch && (
             <button
               type="button"
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              className="premium-reset-btn"
               onClick={() => setSessionSearch('')}
             >
-              ✕ Clear
+              ✕ Clear Search
             </button>
           )}
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            Showing <strong>{filteredSessions.length}</strong> of {sessions.length}
-          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="premium-count-badge">
+            <span>Sessions:</span>
+            <strong>{filteredSessions.length}</strong> of {sessions.length}
+          </div>
           <button
             onClick={fetchSessions}
             className="btn-outline"
-            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+            style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
           >
             🔄 Refresh
           </button>
@@ -627,21 +626,17 @@ const AdminSecurity: React.FC = () => {
 
   const renderEvents = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 320px', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 200px' }}>
-            <input
-              type="text"
-              placeholder="🔍 Search events by email, IP, type, or detail..."
-              value={eventSearch}
-              onChange={e => setEventSearch(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search events by email, IP, type, or detail..."
+            value={eventSearch}
+            onChange={setEventSearch}
+          />
           <select
+            className={`premium-filter-select ${severityFilter !== 'all' ? 'active-filter' : ''}`}
             value={severityFilter}
             onChange={e => setSeverityFilter(e.target.value as any)}
-            style={{ width: 'auto', minWidth: '130px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
           >
             <option value="all">All Severities</option>
             <option value="info">Info</option>
@@ -651,25 +646,25 @@ const AdminSecurity: React.FC = () => {
           {(eventSearch || severityFilter !== 'all') && (
             <button
               type="button"
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              className="premium-reset-btn"
               onClick={() => {
                 setEventSearch('');
                 setSeverityFilter('all');
               }}
             >
-              ✕ Clear
+              ✕ Reset Filters
             </button>
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            Showing <strong>{filteredEvents.length}</strong> of {events.length}
-          </span>
+          <div className="premium-count-badge">
+            <span>Events:</span>
+            <strong>{filteredEvents.length}</strong> of {events.length}
+          </div>
           <button
             onClick={fetchEvents}
             className="btn-outline"
-            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+            style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
           >
             🔄 Refresh
           </button>
@@ -715,21 +710,17 @@ const AdminSecurity: React.FC = () => {
 
   const renderUsers = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 360px', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 180px' }}>
-            <input
-              type="text"
-              placeholder="🔍 Search user name or email..."
-              value={userSearch}
-              onChange={e => setUserSearch(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search user name or email..."
+            value={userSearch}
+            onChange={setUserSearch}
+          />
           <select
+            className={`premium-filter-select ${userRoleFilter !== 'all' ? 'active-filter' : ''}`}
             value={userRoleFilter}
             onChange={e => setUserRoleFilter(e.target.value)}
-            style={{ width: 'auto', minWidth: '120px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
           >
             <option value="all">All Roles</option>
             <option value="student">Student</option>
@@ -737,9 +728,9 @@ const AdminSecurity: React.FC = () => {
             <option value="admin">Admin</option>
           </select>
           <select
+            className={`premium-filter-select ${userStatusFilter !== 'all' ? 'active-filter' : ''}`}
             value={userStatusFilter}
             onChange={e => setUserStatusFilter(e.target.value as any)}
-            style={{ width: 'auto', minWidth: '130px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
@@ -748,26 +739,26 @@ const AdminSecurity: React.FC = () => {
           {(userSearch || userRoleFilter !== 'all' || userStatusFilter !== 'all') && (
             <button
               type="button"
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              className="premium-reset-btn"
               onClick={() => {
                 setUserSearch('');
                 setUserRoleFilter('all');
                 setUserStatusFilter('all');
               }}
             >
-              ✕ Clear
+              ✕ Reset Filters
             </button>
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            Showing <strong>{filteredUsers.length}</strong> of {users.length}
-          </span>
+          <div className="premium-count-badge">
+            <span>Users:</span>
+            <strong>{filteredUsers.length}</strong> of {users.length}
+          </div>
           <button
             onClick={fetchUsers}
             className="btn-outline"
-            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+            style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
           >
             🔄 Refresh
           </button>

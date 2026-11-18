@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Enrollment {
@@ -104,35 +105,18 @@ const AdminApprovals: React.FC = () => {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.75rem',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '1.25rem',
-        background: 'var(--surface)',
-        padding: '0.85rem 1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search by student name, email, or course..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search student name, email, course..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
 
           <select
+            className={`premium-filter-select ${courseFilter !== 'all' ? 'active-filter' : ''}`}
             value={courseFilter}
             onChange={e => setCourseFilter(e.target.value)}
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '140px' }}
           >
             <option value="all">All Courses</option>
             {uniqueCourses.map(([cid, code]) => (
@@ -142,17 +126,18 @@ const AdminApprovals: React.FC = () => {
 
           {(searchQuery || courseFilter !== 'all') && (
             <button
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              type="button"
+              className="premium-reset-btn"
               onClick={() => { setSearchQuery(''); setCourseFilter('all'); }}
             >
-              Reset
+              ✕ Reset Filters
             </button>
           )}
         </div>
 
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-          Showing <strong>{filteredEnrollments.length}</strong> of {enrollments.length} pending
+        <div className="premium-count-badge">
+          <span>Pending:</span>
+          <strong>{filteredEnrollments.length}</strong> of {enrollments.length}
         </div>
       </div>
 

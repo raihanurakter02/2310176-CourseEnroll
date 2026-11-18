@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Course {
@@ -161,69 +162,45 @@ const AdminAssignments: React.FC = () => {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.75rem',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '1.25rem',
-        background: 'var(--surface)',
-        padding: '0.85rem 1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search course code, title, or instructor..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search course code, title, or instructor..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
 
           {/* Filter Tabs */}
-          <div style={{ display: 'flex', gap: '0.35rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+          <div className="premium-pill-group">
             {(['all', 'assigned', 'unassigned'] as const).map(tab => (
               <button
                 key={tab}
                 type="button"
+                className={`premium-pill-btn ${filterTab === tab ? 'active' : ''}`}
                 onClick={() => setFilterTab(tab)}
-                style={{
-                  border: 'none',
-                  background: filterTab === tab ? '#fff' : 'transparent',
-                  color: filterTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-                  fontWeight: filterTab === tab ? 700 : 500,
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  boxShadow: filterTab === tab ? 'var(--shadow-sm)' : 'none',
-                  textTransform: 'capitalize'
-                }}
               >
-                {tab} {tab === 'assigned' ? `(${assignedCourses.length})` : tab === 'unassigned' ? `(${unassignedCourses.length})` : `(${courses.length})`}
+                <span>{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                <span className="premium-pill-badge">
+                  {tab === 'assigned' ? assignedCourses.length : tab === 'unassigned' ? unassignedCourses.length : courses.length}
+                </span>
               </button>
             ))}
           </div>
 
           {(searchQuery || filterTab !== 'all') && (
             <button
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              type="button"
+              className="premium-reset-btn"
               onClick={() => { setSearchQuery(''); setFilterTab('all'); }}
             >
-              Reset
+              ✕ Reset Filters
             </button>
           )}
         </div>
 
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-          Showing <strong>{filteredCourses.length}</strong> of {courses.length} courses
+        <div className="premium-count-badge">
+          <span>Courses:</span>
+          <strong>{filteredCourses.length}</strong> of {courses.length}
         </div>
       </div>
 

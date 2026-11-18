@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface Course {
@@ -43,24 +44,35 @@ const FacultyCourses: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1>My Assigned Classes</h1>
-          <p>View your teaching schedule and access student enrollment rosters.</p>
-        </div>
-        {courses.length > 0 && (
-          <div style={{ position: 'relative', minWidth: '260px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search classes by code or name..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-          </div>
-        )}
+      <div className="page-header">
+        <h1>My Assigned Classes</h1>
+        <p>View your teaching schedule and access student enrollment rosters.</p>
       </div>
+
+      {courses.length > 0 && (
+        <div className="premium-filter-bar">
+          <div className="premium-filter-controls">
+            <SearchInput
+              placeholder="Search classes by code, name, or description..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="premium-reset-btn"
+                onClick={() => setSearchQuery('')}
+              >
+                ✕ Clear Search
+              </button>
+            )}
+          </div>
+          <div className="premium-count-badge">
+            <span>Classes:</span>
+            <strong>{filteredCourses.length}</strong> of {courses.length}
+          </div>
+        </div>
+      )}
 
       <div className="course-grid">
         {isPageLoading ? (

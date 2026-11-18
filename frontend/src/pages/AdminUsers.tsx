@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
+import SearchInput from '../components/SearchInput';
 import { ToastContext } from '../ToastContext';
 
 interface User {
@@ -163,37 +164,18 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.75rem',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '1.25rem',
-        background: 'var(--surface)',
-        padding: '0.85rem 1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
-          {/* Search Box */}
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
-            />
-          </div>
+      <div className="premium-filter-bar">
+        <div className="premium-filter-controls">
+          <SearchInput
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
 
-          {/* Role Filter */}
           <select
+            className={`premium-filter-select ${roleFilter !== 'all' ? 'active-filter' : ''}`}
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value as any)}
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
           >
             <option value="all">All Roles</option>
             <option value="student">Students</option>
@@ -201,11 +183,10 @@ const AdminUsers: React.FC = () => {
             <option value="admin">Admins</option>
           </select>
 
-          {/* Status Filter */}
           <select
+            className={`premium-filter-select ${statusFilter !== 'all' ? 'active-filter' : ''}`}
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as any)}
-            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
           >
             <option value="all">All Statuses</option>
             <option value="active">Active Only</option>
@@ -214,18 +195,18 @@ const AdminUsers: React.FC = () => {
 
           {(searchQuery || roleFilter !== 'all' || statusFilter !== 'all') && (
             <button
-              className="btn-outline"
-              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              type="button"
+              className="premium-reset-btn"
               onClick={() => { setSearchQuery(''); setRoleFilter('all'); setStatusFilter('all'); }}
             >
-              Reset
+              ✕ Reset Filters
             </button>
           )}
         </div>
 
-        {/* Counter */}
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-          Showing <strong>{filteredUsers.length}</strong> of {users.length} users
+        <div className="premium-count-badge">
+          <span>Users:</span>
+          <strong>{filteredUsers.length}</strong> of {users.length}
         </div>
       </div>
 
