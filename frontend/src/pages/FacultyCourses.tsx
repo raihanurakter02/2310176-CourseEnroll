@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
@@ -17,6 +17,7 @@ const FacultyCourses: React.FC = () => {
   const cachedCourses = getCachedData<Course[]>('/faculty/courses');
   const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
   const [isPageLoading, setIsPageLoading] = useState(() => !cachedCourses || cachedCourses.length === 0);
+  const [searchQuery, setSearchQuery] = useState('');
   const toast = useContext(ToastContext);
   const navigate = useNavigate();
 
@@ -30,19 +31,53 @@ const FacultyCourses: React.FC = () => {
       .finally(() => setIsPageLoading(false));
   }, [toast]);
 
+  const filteredCourses = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return courses;
+    return courses.filter(c =>
+      c.course_code.toLowerCase().includes(q) ||
+      c.course_name.toLowerCase().includes(q) ||
+      (c.description && c.description.toLowerCase().includes(q))
+    );
+  }, [courses, searchQuery]);
+
   return (
     <div>
-      <div className="page-header">
-        <h1>My Assigned Classes</h1>
-        <p>View your teaching schedule and access student enrollment rosters.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1>My Assigned Classes</h1>
+          <p>View your teaching schedule and access student enrollment rosters.</p>
+        </div>
+        {courses.length > 0 && (
+          <div style={{ position: 'relative', minWidth: '260px' }}>
+            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search classes by code or name..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="course-grid">
         {isPageLoading ? (
           Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : filteredCourses.length === 0 ? (
+          <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>📚</div>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
+              {courses.length === 0 ? 'No classes assigned yet' : 'No matching classes found'}
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+              {courses.length === 0 ? 'Your assigned courses will appear here once the administrator assigns you.' : 'Try a different search keyword.'}
+            </p>
+          </div>
         ) : (
           <>
-            {courses.map(course => (
+            {filteredCourses.map(course => (
               <div key={course.id} className="course-card">
                 <div className="badge-container">
                   <span className="badge badge-primary">{course.course_code}</span>

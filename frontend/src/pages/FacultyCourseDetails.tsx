@@ -53,9 +53,19 @@ const FacultyCourseDetails: React.FC = () => {
   // History & reporting
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [historyStudent, setHistoryStudent] = useState<Enrollment | null>(null);
+  const [studentSearch, setStudentSearch] = useState('');
 
   const toast = useContext(ToastContext);
   const navigate = useNavigate();
+
+  const filteredEnrollments = useMemo(() => {
+    const q = studentSearch.toLowerCase().trim();
+    if (!q) return enrollments;
+    return enrollments.filter(e =>
+      e.student.name.toLowerCase().includes(q) ||
+      e.student.email.toLowerCase().includes(q)
+    );
+  }, [enrollments, studentSearch]);
 
   const fetchRosterAndSessions = () => {
     setIsLoading(true);
@@ -232,7 +242,7 @@ const FacultyCourseDetails: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--border)', paddingBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '2px solid var(--border)', paddingBottom: '0.75rem' }}>
         <button 
           className={`btn-outline ${activeTab === 'roster' ? 'active' : ''}`} 
           style={{ width: 'auto', border: 'none', background: activeTab === 'roster' ? 'var(--accent-yellow)' : 'transparent', color: 'var(--text-main)', fontWeight: activeTab === 'roster' ? 700 : 500 }} 
@@ -256,6 +266,32 @@ const FacultyCourseDetails: React.FC = () => {
         </button>
       </div>
 
+      {/* Quick Search Toolbar for Enrolled Students */}
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 280px', position: 'relative' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search enrolled student by name or email..."
+            value={studentSearch}
+            onChange={e => setStudentSearch(e.target.value)}
+            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+          />
+        </div>
+        {studentSearch && (
+          <button 
+            type="button" 
+            className="btn-outline" 
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
+            onClick={() => setStudentSearch('')}
+          >
+            ✕ Clear
+          </button>
+        )}
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+          Showing <strong>{filteredEnrollments.length}</strong> of {enrollments.length} students
+        </span>
+      </div>
+
       {/* TAB 1: ROSTER & GRADING */}
       {activeTab === 'roster' && (
         <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -269,10 +305,10 @@ const FacultyCourseDetails: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {enrollments.length === 0 ? (
-                <tr><td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No students enrolled in this course section yet.</td></tr>
+              {filteredEnrollments.length === 0 ? (
+                <tr><td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>{studentSearch ? 'No students match your search filter.' : 'No students enrolled in this course section yet.'}</td></tr>
               ) : (
-                enrollments.map(enrollment => (
+                filteredEnrollments.map(enrollment => (
                   <tr key={enrollment.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '1.25rem 1.5rem', fontWeight: 700 }}>{enrollment.student.name}</td>
                     <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)' }}>{enrollment.student.email}</td>
@@ -379,26 +415,30 @@ const FacultyCourseDetails: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {enrollments.map(enrollment => {
-                  const currentStatus = attendanceRecords[enrollment.id] || 'present';
-                  return (
-                    <tr key={enrollment.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem', fontWeight: 700 }}>
-                        {enrollment.student.name}
-                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{enrollment.student.email}</span>
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'present' }))}>
-                        <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'present'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'present' }))} />
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'late' }))}>
-                        <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'late'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'late' }))} />
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'absent' }))}>
-                        <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'absent'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'absent' }))} />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredEnrollments.length === 0 ? (
+                  <tr><td colSpan={4} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>{studentSearch ? 'No students match your search filter.' : 'No students found.'}</td></tr>
+                ) : (
+                  filteredEnrollments.map(enrollment => {
+                    const currentStatus = attendanceRecords[enrollment.id] || 'present';
+                    return (
+                      <tr key={enrollment.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '1rem', fontWeight: 700 }}>
+                          {enrollment.student.name}
+                          <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{enrollment.student.email}</span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'present' }))}>
+                          <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'present'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'present' }))} />
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'late' }))}>
+                          <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'late'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'late' }))} />
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'absent' }))}>
+                          <input type="radio" name={`att-${enrollment.id}`} style={{ cursor: 'pointer', transform: 'scale(1.2)' }} checked={currentStatus === 'absent'} onChange={() => setAttendanceRecords(p => ({ ...p, [enrollment.id]: 'absent' }))} />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           )}
@@ -430,30 +470,34 @@ const FacultyCourseDetails: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {enrollments.map(enroll => {
-                const stats = getStudentStats(enroll.id);
-                return (
-                  <tr key={enroll.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 700 }}>
-                      {enroll.student.name}
-                      <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{enroll.student.email}</span>
-                    </td>
-                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#16a34a', fontWeight: 600 }}>{stats.present}</td>
-                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#d97706', fontWeight: 600 }}>{stats.late}</td>
-                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#dc2626', fontWeight: 600 }}>{stats.absent}</td>
-                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
-                      <span className={`badge ${stats.percentage >= 80 ? 'badge-success' : stats.percentage >= 60 ? 'badge-warning' : 'badge-danger'}`}>
-                        {stats.total > 0 ? `${stats.percentage}%` : 'N/A'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
-                      <button className="btn-outline" style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setHistoryStudent(enroll)}>
-                        View History
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredEnrollments.length === 0 ? (
+                <tr><td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>{studentSearch ? 'No students match your search filter.' : 'No student records available.'}</td></tr>
+              ) : (
+                filteredEnrollments.map(enroll => {
+                  const stats = getStudentStats(enroll.id);
+                  return (
+                    <tr key={enroll.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '1.25rem 1.5rem', fontWeight: 700 }}>
+                        {enroll.student.name}
+                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{enroll.student.email}</span>
+                      </td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#16a34a', fontWeight: 600 }}>{stats.present}</td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#d97706', fontWeight: 600 }}>{stats.late}</td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: '#dc2626', fontWeight: 600 }}>{stats.absent}</td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                        <span className={`badge ${stats.percentage >= 80 ? 'badge-success' : stats.percentage >= 60 ? 'badge-warning' : 'badge-danger'}`}>
+                          {stats.total > 0 ? `${stats.percentage}%` : 'N/A'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
+                        <button className="btn-outline" style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setHistoryStudent(enroll)}>
+                          View History
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

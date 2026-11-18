@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
@@ -19,6 +19,11 @@ const AdminUsers: React.FC = () => {
   const [isPageLoading, setIsPageLoading] = useState(() => !cachedUsers || cachedUsers.length === 0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'faculty' | 'admin'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
@@ -41,6 +46,26 @@ const AdminUsers: React.FC = () => {
   };
 
   useEffect(() => fetchUsers(), []);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Search by name or email
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q || 
+        user.name.toLowerCase().includes(q) || 
+        user.email.toLowerCase().includes(q);
+
+      // Filter by role
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+
+      // Filter by status
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'banned' && user.is_banned) || 
+        (statusFilter === 'active' && !user.is_banned);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, roleFilter, statusFilter]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +162,73 @@ const AdminUsers: React.FC = () => {
         </button>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '1.25rem',
+        background: 'var(--surface)',
+        padding: '0.85rem 1.25rem',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
+          {/* Search Box */}
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
+            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
+            />
+          </div>
+
+          {/* Role Filter */}
+          <select
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value as any)}
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
+          >
+            <option value="all">All Roles</option>
+            <option value="student">Students</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Admins</option>
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as any)}
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="banned">Banned Only</option>
+          </select>
+
+          {(searchQuery || roleFilter !== 'all' || statusFilter !== 'all') && (
+            <button
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              onClick={() => { setSearchQuery(''); setRoleFilter('all'); setStatusFilter('all'); }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Counter */}
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          Showing <strong>{filteredUsers.length}</strong> of {users.length} users
+        </div>
+      </div>
+
       <div className="table-scroll" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
@@ -151,8 +243,16 @@ const AdminUsers: React.FC = () => {
           <tbody>
             {isPageLoading ? (
               <tr><td colSpan={5} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔍</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>No users found</div>
+                  <div style={{ fontSize: '0.875rem' }}>Try adjusting your search query or filters.</div>
+                </td>
+              </tr>
             ) : (
-              users.map(user => (
+              filteredUsers.map(user => (
                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600 }}>{user.name}</td>
                   <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)' }}>{user.email}</td>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import { ToastContext } from '../ToastContext';
@@ -20,6 +20,8 @@ interface ClassSession { id: number; date: string; topic: string | null; }
 const AdminCourses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(() => getCachedData<Course[]>('/courses') || []);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [creditFilter, setCreditFilter] = useState<'all' | '1' | '2' | '3' | '4'>('all');
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -132,6 +134,20 @@ const AdminCourses: React.FC = () => {
     try { (e.target as HTMLInputElement).showPicker(); } catch {}
   };
 
+  const filteredCourses = useMemo(() => {
+    return courses.filter(course => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q ||
+        course.course_code.toLowerCase().includes(q) ||
+        course.course_name.toLowerCase().includes(q) ||
+        (course.description && course.description.toLowerCase().includes(q)) ||
+        (course.room && course.room.toLowerCase().includes(q));
+
+      const matchesCredit = creditFilter === 'all' || String(course.credit) === creditFilter;
+      return matchesSearch && matchesCredit;
+    });
+  }, [courses, searchQuery, creditFilter]);
+
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -142,8 +158,62 @@ const AdminCourses: React.FC = () => {
         <button className="btn-primary" style={{ width: 'auto' }} onClick={() => setIsCreateModalOpen(true)}>+ Create Course</button>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '1.5rem',
+        background: 'var(--surface)',
+        padding: '0.85rem 1.25rem',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
+            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search by code, title, room..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
+            />
+          </div>
+
+          <select
+            value={creditFilter}
+            onChange={e => setCreditFilter(e.target.value as any)}
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
+          >
+            <option value="all">All Credits</option>
+            <option value="1">1 Credit</option>
+            <option value="2">2 Credits</option>
+            <option value="3">3 Credits</option>
+            <option value="4">4 Credits</option>
+          </select>
+
+          {(searchQuery || creditFilter !== 'all') && (
+            <button
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              onClick={() => { setSearchQuery(''); setCreditFilter('all'); }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          Showing <strong>{filteredCourses.length}</strong> of {courses.length} courses
+        </div>
+      </div>
+
       <div className="course-grid">
-        {courses.map(course => (
+        {filteredCourses.map(course => (
           <div key={course.id} className="course-card">
             <span className="course-code">{course.course_code}</span>
             <h3 className="course-title">{course.course_name}</h3>
@@ -158,7 +228,13 @@ const AdminCourses: React.FC = () => {
             </div>
           </div>
         ))}
-        {courses.length === 0 && <div className="empty-state"><h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>No courses found</h3><p style={{ margin: 0 }}>Click the "Create Course" button above to get started.</p></div>}
+        {filteredCourses.length === 0 && (
+          <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '3rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>🔍</div>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>No matching courses</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)' }}>Try adjusting your search keyword or credit filter.</p>
+          </div>
+        )}
       </div>
 
       {/* CREATE MODAL */}

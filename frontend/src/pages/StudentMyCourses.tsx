@@ -33,6 +33,7 @@ const StudentMyCourses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
   const [selectedAction, setSelectedAction] = useState<Enrollment | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isPageLoading, setIsPageLoading] = useState(() => !cachedEnrollments);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
@@ -73,9 +74,24 @@ const StudentMyCourses: React.FC = () => {
   }), [enrollments]);
 
   const filteredEnrollments = useMemo(() => {
-    if (activeFilter === 'all') return enrollments;
-    return enrollments.filter(e => e.status === activeFilter);
-  }, [enrollments, activeFilter]);
+    let list = enrollments;
+    if (activeFilter !== 'all') {
+      list = list.filter(e => e.status === activeFilter);
+    }
+    const q = searchQuery.toLowerCase().trim();
+    if (q) {
+      list = list.filter(e => {
+        const c = e.course || courses.find(course => course.id === e.course_id);
+        if (!c) return false;
+        return (
+          c.course_code.toLowerCase().includes(q) ||
+          c.course_name.toLowerCase().includes(q) ||
+          (c.room && c.room.toLowerCase().includes(q))
+        );
+      });
+    }
+    return list;
+  }, [enrollments, courses, activeFilter, searchQuery]);
 
   const handleAction = async () => {
     if (!selectedAction) return;
@@ -166,6 +182,32 @@ const StudentMyCourses: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Search & Filter Toolbar */}
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 260px', position: 'relative' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search enrolled courses by code, title, or room..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+          />
+        </div>
+        {searchQuery && (
+          <button 
+            type="button" 
+            className="btn-outline" 
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
+            onClick={() => setSearchQuery('')}
+          >
+            ✕ Clear
+          </button>
+        )}
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+          Showing <strong>{filteredEnrollments.length}</strong> of {enrollments.length} records
+        </span>
+      </div>
 
       {/* Filter Tabs */}
       <div style={{
@@ -346,19 +388,28 @@ const StudentMyCourses: React.FC = () => {
             {filteredEnrollments.length === 0 && (
               <div className="empty-state">
                 <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>
-                  {activeFilter === 'rejected' ? 'No Rejected Enrollments' :
+                  {searchQuery ? 'No Matching Courses Found' :
+                   activeFilter === 'rejected' ? 'No Rejected Enrollments' :
                    activeFilter === 'waitlisted' ? 'No Courses on Waitlist' :
                    activeFilter === 'approved' ? 'No Active Approved Classes' :
                    activeFilter === 'pending' ? 'No Pending Requests' : 'No Enrollments Found'}
                 </h3>
                 <p style={{ margin: '0 0 1.25rem 0' }}>
-                  {activeFilter === 'all' 
-                    ? 'You have not registered for any courses yet.' 
-                    : `You do not have any courses in the ${activeFilter} state.`}
+                  {searchQuery
+                    ? `No course records matching "${searchQuery}" in ${activeFilter === 'all' ? 'any status' : activeFilter}.`
+                    : (activeFilter === 'all' 
+                        ? 'You have not registered for any courses yet.' 
+                        : `You do not have any courses in the ${activeFilter} state.`)}
                 </p>
-                <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/student/courses')}>
-                  Explore Course Catalog
-                </button>
+                {searchQuery ? (
+                  <button className="btn-outline" style={{ width: 'auto' }} onClick={() => setSearchQuery('')}>
+                    Clear Search Filter
+                  </button>
+                ) : (
+                  <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/student/courses')}>
+                    Explore Course Catalog
+                  </button>
+                )}
               </div>
             )}
           </>

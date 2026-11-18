@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
@@ -21,6 +21,11 @@ const AdminAnnouncements: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => cachedAnnouncements || []);
   const [isLoading, setIsLoading] = useState(() => !cachedAnnouncements || cachedAnnouncements.length === 0);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [audienceFilter, setAudienceFilter] = useState<'all' | 'student' | 'faculty'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'normal' | 'important' | 'urgent'>('all');
   
   // Create / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,6 +117,20 @@ const AdminAnnouncements: React.FC = () => {
     }
   };
 
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter(a => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q ||
+        a.title.toLowerCase().includes(q) ||
+        a.content.toLowerCase().includes(q);
+
+      const matchesAudience = audienceFilter === 'all' || a.target_role === audienceFilter;
+      const matchesPriority = priorityFilter === 'all' || a.priority === priorityFilter;
+
+      return matchesSearch && matchesAudience && matchesPriority;
+    });
+  }, [announcements, searchQuery, audienceFilter, priorityFilter]);
+
   return (
     <div className="page-fade-in">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -133,6 +152,69 @@ const AdminAnnouncements: React.FC = () => {
         </button>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '1.25rem',
+        background: 'var(--surface)',
+        padding: '0.85rem 1.25rem',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
+            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search announcements by title or content..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: 'var(--radius-md)' }}
+            />
+          </div>
+
+          <select
+            value={audienceFilter}
+            onChange={e => setAudienceFilter(e.target.value as any)}
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
+          >
+            <option value="all">All Audiences</option>
+            <option value="student">Students Only</option>
+            <option value="faculty">Faculty Only</option>
+          </select>
+
+          <select
+            value={priorityFilter}
+            onChange={e => setPriorityFilter(e.target.value as any)}
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', borderRadius: 'var(--radius-md)', minWidth: '130px' }}
+          >
+            <option value="all">All Priorities</option>
+            <option value="normal">Normal</option>
+            <option value="important">Important</option>
+            <option value="urgent">Urgent</option>
+          </select>
+
+          {(searchQuery || audienceFilter !== 'all' || priorityFilter !== 'all') && (
+            <button
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.85rem', fontSize: '0.82rem' }}
+              onClick={() => { setSearchQuery(''); setAudienceFilter('all'); setPriorityFilter('all'); }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          Showing <strong>{filteredAnnouncements.length}</strong> of {announcements.length} notices
+        </div>
+      </div>
+
       {/* Announcements Table */}
       <div className="table-scroll" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -148,10 +230,16 @@ const AdminAnnouncements: React.FC = () => {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={5} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
-            ) : announcements.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No announcements broadcast yet. Click "+ New Announcement" to post your first alert.</td></tr>
+            ) : filteredAnnouncements.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>📢</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>No announcements match your search</div>
+                  <div style={{ fontSize: '0.875rem' }}>Try clearing filters or search query.</div>
+                </td>
+              </tr>
             ) : (
-              announcements.map(a => {
+              filteredAnnouncements.map(a => {
                 const isUrgent = a.priority === 'urgent';
                 const isImportant = a.priority === 'important';
 

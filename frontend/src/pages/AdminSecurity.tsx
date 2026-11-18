@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import api, { getCachedData } from '../api';
 import { ToastContext } from '../ToastContext';
 import Modal from '../components/Modal';
@@ -206,6 +206,55 @@ const AdminSecurity: React.FC = () => {
   const [banReason, setBanReason] = useState('');
   const [banLoading, setBanLoading] = useState(false);
   const [unbanLoadingId, setUnbanLoadingId] = useState<number | null>(null);
+
+  // Search & Filter States
+  const [sessionSearch, setSessionSearch] = useState('');
+  const [eventSearch, setEventSearch] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<'all' | 'info' | 'warning' | 'critical'>('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+
+  const filteredSessions = useMemo(() => {
+    if (!sessionSearch.trim()) return sessions;
+    const q = sessionSearch.toLowerCase().trim();
+    return sessions.filter(s =>
+      s.user_name.toLowerCase().includes(q) ||
+      s.user_email.toLowerCase().includes(q) ||
+      (s.ip_address && s.ip_address.toLowerCase().includes(q)) ||
+      (s.device_hint && s.device_hint.toLowerCase().includes(q))
+    );
+  }, [sessions, sessionSearch]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter(ev => {
+      const q = eventSearch.toLowerCase().trim();
+      const matchesSearch = !q || (
+        (ev.user_email && ev.user_email.toLowerCase().includes(q)) ||
+        (ev.ip_address && ev.ip_address.toLowerCase().includes(q)) ||
+        (ev.detail && ev.detail.toLowerCase().includes(q)) ||
+        ev.event_type.toLowerCase().includes(q) ||
+        formatEventType(ev.event_type).toLowerCase().includes(q)
+      );
+      const matchesSeverity = severityFilter === 'all' || ev.severity === severityFilter;
+      return matchesSearch && matchesSeverity;
+    });
+  }, [events, eventSearch, severityFilter]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const q = userSearch.toLowerCase().trim();
+      const matchesSearch = !q || (
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+      );
+      const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+      const matchesStatus = userStatusFilter === 'all' || (
+        userStatusFilter === 'banned' ? u.is_banned : !u.is_banned
+      );
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, userSearch, userRoleFilter, userStatusFilter]);
 
   // ── Fetchers ─────────────────────────────────────────────────────────────────
 
@@ -458,21 +507,47 @@ const AdminSecurity: React.FC = () => {
 
   const renderSessions = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          onClick={fetchSessions}
-          className="btn-outline"
-          style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
-        >
-          🔄 Refresh
-        </button>
+      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '220px' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search session by user, email, IP, or device..."
+            value={sessionSearch}
+            onChange={e => setSessionSearch(e.target.value)}
+            style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {sessionSearch && (
+            <button
+              type="button"
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => setSessionSearch('')}
+            >
+              ✕ Clear
+            </button>
+          )}
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Showing <strong>{filteredSessions.length}</strong> of {sessions.length}
+          </span>
+          <button
+            onClick={fetchSessions}
+            className="btn-outline"
+            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
       {sessionsLoading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           Loading sessions…
         </div>
-      ) : sessions.length === 0 ? (
-        <div className="empty-state">No active sessions found.</div>
+      ) : filteredSessions.length === 0 ? (
+        <div className="empty-state">
+          {sessionSearch ? 'No active sessions match your search criteria.' : 'No active sessions found.'}
+        </div>
       ) : (
         <div className="table-wrapper">
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -484,7 +559,7 @@ const AdminSecurity: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {sessions.map(s => (
+              {filteredSessions.map(s => (
                 <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.75rem 1rem', fontWeight: 500 }}>
                     {s.user_name}
@@ -552,22 +627,62 @@ const AdminSecurity: React.FC = () => {
 
   const renderEvents = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Auto-refreshes every 30 seconds</span>
-        <button
-          onClick={fetchEvents}
-          className="btn-outline"
-          style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
-        >
-          🔄 Refresh Now
-        </button>
+      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 320px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <input
+              type="text"
+              placeholder="🔍 Search events by email, IP, type, or detail..."
+              value={eventSearch}
+              onChange={e => setEventSearch(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
+            />
+          </div>
+          <select
+            value={severityFilter}
+            onChange={e => setSeverityFilter(e.target.value as any)}
+            style={{ width: 'auto', minWidth: '130px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
+          >
+            <option value="all">All Severities</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="critical">Critical</option>
+          </select>
+          {(eventSearch || severityFilter !== 'all') && (
+            <button
+              type="button"
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => {
+                setEventSearch('');
+                setSeverityFilter('all');
+              }}
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Showing <strong>{filteredEvents.length}</strong> of {events.length}
+          </span>
+          <button
+            onClick={fetchEvents}
+            className="btn-outline"
+            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
       {eventsLoading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           Loading events…
         </div>
-      ) : events.length === 0 ? (
-        <div className="empty-state">No security events recorded.</div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="empty-state">
+          {eventSearch || severityFilter !== 'all' ? 'No events match your search criteria.' : 'No security events recorded.'}
+        </div>
       ) : (
         <div className="table-wrapper">
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -579,7 +694,7 @@ const AdminSecurity: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {events.map(ev => (
+              {filteredEvents.map(ev => (
                 <tr key={ev.id} style={{ borderBottom: '1px solid var(--border)' }} className={`severity-${ev.severity}-bg`}>
                   <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{formatDate(ev.created_at)}</td>
                   <td style={{ padding: '0.75rem 1rem', fontWeight: 600, fontSize: '0.85rem' }}>{formatEventType(ev.event_type)}</td>
@@ -600,21 +715,72 @@ const AdminSecurity: React.FC = () => {
 
   const renderUsers = () => (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          onClick={fetchUsers}
-          className="btn-outline"
-          style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
-        >
-          🔄 Refresh
-        </button>
+      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 360px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 180px' }}>
+            <input
+              type="text"
+              placeholder="🔍 Search user name or email..."
+              value={userSearch}
+              onChange={e => setUserSearch(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0 }}
+            />
+          </div>
+          <select
+            value={userRoleFilter}
+            onChange={e => setUserRoleFilter(e.target.value)}
+            style={{ width: 'auto', minWidth: '120px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
+          >
+            <option value="all">All Roles</option>
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select
+            value={userStatusFilter}
+            onChange={e => setUserStatusFilter(e.target.value as any)}
+            style={{ width: 'auto', minWidth: '130px', padding: '0.5rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="banned">Banned</option>
+          </select>
+          {(userSearch || userRoleFilter !== 'all' || userStatusFilter !== 'all') && (
+            <button
+              type="button"
+              className="btn-outline"
+              style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => {
+                setUserSearch('');
+                setUserRoleFilter('all');
+                setUserStatusFilter('all');
+              }}
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Showing <strong>{filteredUsers.length}</strong> of {users.length}
+          </span>
+          <button
+            onClick={fetchUsers}
+            className="btn-outline"
+            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8125rem' }}
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
       {usersLoading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           Loading users…
         </div>
-      ) : users.length === 0 ? (
-        <div className="empty-state">No users found.</div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="empty-state">
+          {userSearch || userRoleFilter !== 'all' || userStatusFilter !== 'all' ? 'No users match your search and filter criteria.' : 'No users found.'}
+        </div>
       ) : (
         <div className="table-wrapper">
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -626,7 +792,7 @@ const AdminSecurity: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {filteredUsers.map(u => (
                 <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>{u.name}</td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{u.email}</td>

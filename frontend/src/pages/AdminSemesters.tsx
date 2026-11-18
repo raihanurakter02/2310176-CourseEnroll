@@ -18,6 +18,8 @@ const AdminSemesters: React.FC = () => {
   const [semesters, setSemesters] = useState<Semester[]>(() => getCachedData<Semester[]>('/semesters') || []);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSemester, setEditingSemester] = useState<Semester | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   
   const [newSemester, setNewSemester] = useState({ name: '', start_date: '', end_date: '', add_drop_deadline: '', grading_start_date: '', grading_end_date: '' });
   const toast = useContext(ToastContext);
@@ -77,9 +79,15 @@ const AdminSemesters: React.FC = () => {
     try { (e.target as HTMLInputElement).showPicker(); } catch {}
   };
 
+  const filteredSemesters = semesters.filter(s => {
+    const matchesSearch = !searchQuery.trim() || s.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? s.is_active : !s.is_active);
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1>Semester Management</h1>
           <p>Define academic timelines, enrollment deadlines, and strict grading periods.</p>
@@ -87,25 +95,70 @@ const AdminSemesters: React.FC = () => {
         <button className="btn-primary" style={{ width: 'auto' }} onClick={() => setIsCreateModalOpen(true)}>+ Add Semester</button>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 240px' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search semester name..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem', margin: 0 }}
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as any)}
+          style={{ width: 'auto', minWidth: '150px', padding: '0.55rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.875rem', margin: 0, cursor: 'pointer' }}
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+        {(searchQuery || statusFilter !== 'all') && (
+          <button
+            type="button"
+            className="btn-outline"
+            style={{ width: 'auto', padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+          >
+            ✕ Reset
+          </button>
+        )}
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+          Showing <strong>{filteredSemesters.length}</strong> of {semesters.length} semesters
+        </span>
+      </div>
+
       <div className="course-grid">
-        {semesters.map(semester => (
-          <div key={semester.id} className="course-card" style={{ border: semester.is_active ? '2px solid var(--primary)' : '' }}>
-            <div className="badge-container">
-              {semester.is_active && <span className="badge badge-success">Active Timeline</span>}
-            </div>
-            <h3 className="course-title">{semester.name}</h3>
-            <p className="course-desc" style={{ fontSize: '0.85rem' }}>
-              <strong>Starts:</strong> {new Date(semester.start_date).toLocaleString()} <br/>
-              <strong>Ends:</strong> {new Date(semester.end_date).toLocaleString()} <br/>
-              <strong style={{ color: '#dc2626' }}>Drop Deadline:</strong> {new Date(semester.add_drop_deadline).toLocaleString()} <br/>
-              <strong style={{ color: 'var(--primary)' }}>Grading Window:</strong> {semester.grading_start_date ? new Date(semester.grading_start_date).toLocaleDateString() : 'N/A'} - {semester.grading_end_date ? new Date(semester.grading_end_date).toLocaleDateString() : 'N/A'}
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-              <button className="btn-outline" onClick={() => setEditingSemester(semester)}>Edit Details</button>
-              {!semester.is_active && <button className="btn-primary" onClick={() => handleActivate(semester.id)}>Set Active</button>}
-            </div>
+        {filteredSemesters.length === 0 ? (
+          <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 0.5rem 0' }}>No semesters found</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)' }}>Try adjusting your search or status filter.</p>
           </div>
-        ))}
+        ) : (
+          filteredSemesters.map(semester => (
+            <div key={semester.id} className="course-card" style={{ border: semester.is_active ? '2px solid var(--primary)' : '' }}>
+              <div className="badge-container">
+                {semester.is_active && <span className="badge badge-success">Active Timeline</span>}
+              </div>
+              <h3 className="course-title">{semester.name}</h3>
+              <p className="course-desc" style={{ fontSize: '0.85rem' }}>
+                <strong>Starts:</strong> {new Date(semester.start_date).toLocaleString()} <br/>
+                <strong>Ends:</strong> {new Date(semester.end_date).toLocaleString()} <br/>
+                <strong style={{ color: '#dc2626' }}>Drop Deadline:</strong> {new Date(semester.add_drop_deadline).toLocaleString()} <br/>
+                <strong style={{ color: 'var(--primary)' }}>Grading Window:</strong> {semester.grading_start_date ? new Date(semester.grading_start_date).toLocaleDateString() : 'N/A'} - {semester.grading_end_date ? new Date(semester.grading_end_date).toLocaleDateString() : 'N/A'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                <button className="btn-outline" onClick={() => setEditingSemester(semester)}>Edit Details</button>
+                {!semester.is_active && <button className="btn-primary" onClick={() => handleActivate(semester.id)}>Set Active</button>}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create Semester">
