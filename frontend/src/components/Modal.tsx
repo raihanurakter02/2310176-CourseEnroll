@@ -17,43 +17,75 @@ const SIZE_MAP: Record<ModalSize, string> = {
 };
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(isOpen);
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
+    let animTimer: number | null = null;
+    let hideTimer: number | null = null;
+
     if (isOpen) {
       setIsVisible(true);
-      // Small delay to allow DOM insertion before triggering animation
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setIsAnimating(true));
-      });
+      // Small frame delay for smooth CSS entrance transition
+      animTimer = window.setTimeout(() => {
+        setIsAnimating(true);
+      }, 20);
     } else {
       setIsAnimating(false);
-      const timer = setTimeout(() => setIsVisible(false), 180);
-      return () => clearTimeout(timer);
+      hideTimer = window.setTimeout(() => {
+        setIsVisible(false);
+      }, 200);
     }
+
+    return () => {
+      if (animTimer) clearTimeout(animTimer);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
   }, [isOpen]);
 
-  const handleClose = () => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsAnimating(false);
     setTimeout(() => {
       onClose();
-    }, 180);
+    }, 150);
   };
 
-  if (!isVisible) return null;
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose(e);
+    }
+  };
+
+  if (!isVisible && !isOpen) return null;
 
   const backdropStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '1rem',
     zIndex: 1000,
-    backdropFilter: 'blur(2px)',
-    transition: 'opacity 200ms ease',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    transition: 'opacity 180ms ease-out',
     opacity: isAnimating ? 1 : 0,
   };
 
@@ -62,16 +94,16 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     borderRadius: 'var(--radius-lg)',
     width: '100%',
     maxWidth: SIZE_MAP[size],
-    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
     overflow: 'hidden',
-    transition: 'opacity 220ms cubic-bezier(0.16, 1, 0.3, 1), transform 220ms cubic-bezier(0.16, 1, 0.3, 1)',
+    transition: 'opacity 180ms ease-out, transform 180ms ease-out',
     opacity: isAnimating ? 1 : 0,
-    transform: isAnimating ? 'translateY(0)' : 'translateY(20px)',
+    transform: isAnimating ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.98)',
   };
 
   return (
-    <div style={backdropStyle} onClick={handleClose}>
-      <div style={cardStyle} onClick={e => e.stopPropagation()}>
+    <div style={backdropStyle} onClick={handleBackdropClick} onMouseDown={e => { if (e.target === e.currentTarget) e.stopPropagation(); }}>
+      <div style={cardStyle} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
         {/* Header */}
         <div
           style={{

@@ -17,10 +17,15 @@ class NotificationManager:
     """Manages real-time WebSocket connections for instant notification delivery."""
     def __init__(self):
         self.active_connections: list[WebSocket] = []
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        try:
+            self._loop = asyncio.get_running_loop()
+        except Exception:
+            pass
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
@@ -32,6 +37,21 @@ class NotificationManager:
                 await connection.send_json(message)
             except Exception:
                 self.disconnect(connection)
+
+    def broadcast_sync(self, message: dict):
+        if not self.active_connections:
+            return
+        try:
+            if self._loop and self._loop.is_running():
+                asyncio.run_coroutine_threadsafe(self.broadcast(message), self._loop)
+            else:
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self.broadcast(message))
+                except RuntimeError:
+                    pass
+        except Exception:
+            pass
 
 realtime_notifier = NotificationManager()
 
@@ -697,7 +717,13 @@ def get_course_sessions(course_id: int, db: Session = Depends(get_db), current_u
 
 
 @app.post("/courses/{course_id}/sessions", response_model=schemas.ClassSessionResponse)
-def create_course_session(course_id: int, session_data: schemas.ClassSessionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+def create_course_session(course_id: int, session_data: schemas.ClassSessionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_str != "admin" and (role_str != "faculty" or course.faculty_id != current_user.id):
+        raise HTTPException(status_code=403, detail="Only assigned faculty or administrators can schedule class sessions")
     new_session = models.ClassSession(course_id=course_id, date=session_data.date, topic=session_data.topic)
     db.add(new_session)
     db.commit()
@@ -706,10 +732,14 @@ def create_course_session(course_id: int, session_data: schemas.ClassSessionCrea
 
 
 @app.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_course_session(session_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+def delete_course_session(session_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
     session = db.query(models.ClassSession).filter(models.ClassSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    course = db.query(models.Course).filter(models.Course.id == session.course_id).first()
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_str != "admin" and (role_str != "faculty" or (course and course.faculty_id != current_user.id)):
+        raise HTTPException(status_code=403, detail="Only assigned faculty or administrators can delete class sessions")
     db.delete(session)
     db.commit()
 
@@ -801,11 +831,11 @@ def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user:
         if next_waitlisted:
             next_waitlisted.status = models.EnrollmentStatus.approved
             db.commit()
-            asyncio.create_task(realtime_notifier.broadcast({
+            realtime_notifier.broadcast_sync({
                 "type": "waitlist_promoted",
                 "student_id": next_waitlisted.student_id,
                 "course_id": course_id,
-            }))
+            })
 
 
 # ---------------------------------------------------------------------------
@@ -964,14 +994,14 @@ def update_enrollment_status(enrollment_id: int, status_update: schemas.Enrollme
     course = db.query(models.Course).filter(models.Course.id == enrollment.course_id).first()
     status_str = status_update.status.value if hasattr(status_update.status, "value") else str(status_update.status)
     try:
-        asyncio.create_task(realtime_notifier.broadcast({
+        realtime_notifier.broadcast_sync({
             "type": "enrollment_update",
             "student_id": enrollment.student_id,
             "course_id": enrollment.course_id,
             "course_title": course.course_name if course else "Course",
             "course_code": course.course_code if course else "",
             "status": status_str,
-        }))
+        })
     except Exception:
         pass
 
@@ -1306,7 +1336,7 @@ def create_announcement(
     db.commit()
 
     try:
-        asyncio.create_task(realtime_notifier.broadcast({
+        realtime_notifier.broadcast_sync({
             "type": "new_announcement",
             "id": new_announcement.id,
             "title": new_announcement.title,
@@ -1315,7 +1345,7 @@ def create_announcement(
             "priority": new_announcement.priority,
             "author_name": current_user.name,
             "created_at": new_announcement.created_at.isoformat() if new_announcement.created_at else "",
-        }))
+        })
     except Exception:
         pass
     

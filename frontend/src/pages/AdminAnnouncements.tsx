@@ -116,7 +116,16 @@ const AdminAnnouncements: React.FC = () => {
           <h1>📢 Announcement Management</h1>
           <p>Broadcast university-wide alerts, deadline notices, and official announcements to students and faculty.</p>
         </div>
-        <button className="btn-primary" style={{ width: 'auto' }} onClick={handleOpenCreate}>
+        <button 
+          type="button" 
+          className="btn-primary" 
+          style={{ width: 'auto' }} 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleOpenCreate();
+          }}
+        >
           + New Announcement
         </button>
       </div>
