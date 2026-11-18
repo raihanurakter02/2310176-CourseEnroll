@@ -94,7 +94,7 @@ const AdminUsers: React.FC = () => {
         </button>
       </div>
 
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="table-scroll" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -126,13 +126,15 @@ const AdminUsers: React.FC = () => {
                       >
                         Edit
                       </button>
-                      <button 
-                        className="btn-outline" 
-                        style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#dc2626', borderColor: '#fca5a5' }} 
-                        onClick={() => setUserToDelete(user.id)}
-                      >
-                        Remove
-                      </button>
+                      {user.role !== 'admin' && (
+                        <button 
+                          className="btn-outline" 
+                          style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#dc2626', borderColor: '#fca5a5' }} 
+                          onClick={() => setUserToDelete(user.id)}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

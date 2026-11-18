@@ -14,6 +14,7 @@ class EnrollmentStatus(str, enum.Enum):
     approved = "approved"
     rejected = "rejected"
     dropped = "dropped"
+    waitlisted = "waitlisted"
 
 class AttendanceStatus(str, enum.Enum):
     present = "present"
@@ -28,9 +29,82 @@ class User(Base):
     password_hash = Column(String)
     role = Column(Enum(UserRole), default=UserRole.student)
     is_active = Column(Boolean, default=True)
+    # Security fields
+    is_banned = Column(Boolean, default=False)
+    ban_reason = Column(String, nullable=True)
+    login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
+    token_version = Column(Integer, default=0)
 
     taught_courses = relationship("Course", back_populates="faculty")
     enrollments = relationship("Enrollment", back_populates="student")
+
+
+class TokenBlacklist(Base):
+    """Stores revoked/invalidated JWTs (for forced logout)."""
+    __tablename__ = "token_blacklist"
+    id = Column(Integer, primary_key=True)
+    jti = Column(String, unique=True, index=True)  # JWT ID claim
+    user_id = Column(Integer, ForeignKey("users.id"))
+    revoked_at = Column(DateTime, default=datetime.datetime.utcnow)
+    reason = Column(String, nullable=True)  # "malformed", "admin_revoke", "logout", "user_banned"
+
+
+class UserSession(Base):
+    """Tracks active login sessions / devices."""
+    __tablename__ = "user_sessions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    jti = Column(String, unique=True, index=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    device_hint = Column(String, nullable=True)  # "Chrome on Windows", etc.
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+
+
+class SecurityEvent(Base):
+    """Audit log for security events."""
+    __tablename__ = "security_events"
+    id = Column(Integer, primary_key=True)
+    event_type = Column(String)  # "login_success", "login_failed", "token_malformed", "user_banned", "session_revoked", "force_logout_all", "suspicious_activity"
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_email = Column(String, nullable=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    detail = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    severity = Column(String, default="info")  # "info", "warning", "critical"
+
+
+class Announcement(Base):
+    """Broadcast announcements from admins to students, faculty, or all users."""
+    __tablename__ = "announcements"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    content = Column(Text)
+    target_role = Column(String, default="all")  # "all", "student", "faculty"
+    priority = Column(String, default="normal")  # "normal", "important", "urgent"
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+
+    author = relationship("User")
+    reads = relationship("AnnouncementRead", back_populates="announcement", cascade="all, delete-orphan")
+
+
+class AnnouncementRead(Base):
+    """Tracks whether a user has read a specific announcement."""
+    __tablename__ = "announcement_reads"
+    id = Column(Integer, primary_key=True, index=True)
+    announcement_id = Column(Integer, ForeignKey("announcements.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    read_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    announcement = relationship("Announcement", back_populates="reads")
+    user = relationship("User")
+
 
 class Semester(Base):
     __tablename__ = "semesters"
@@ -63,6 +137,10 @@ class Course(Base):
     description = Column(Text, nullable=True)
     credit = Column(Integer)
     capacity = Column(Integer)
+    schedule_days = Column(String, default="Mon,Wed")
+    start_time = Column(String, default="10:00")
+    end_time = Column(String, default="11:30")
+    room = Column(String, default="Hall 101")
     faculty_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=True)
 

@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  securityLogout: (reason: string) => void;
   loading: boolean;
 }
 
@@ -36,22 +37,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else if (!token) {
       setLoading(false);
     }
+
+    const handleSecurityLogout = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const reason = customEvent.detail?.reason || 'Session expired';
+      sessionStorage.setItem('logout_reason', reason);
+      logout();
+    };
+
+    window.addEventListener('auth:logout', handleSecurityLogout);
+    return () => window.removeEventListener('auth:logout', handleSecurityLogout);
   }, [token, user]);
 
   const login = (newToken: string, userData: User) => {
+    sessionStorage.removeItem('manual_logout');
+    sessionStorage.removeItem('logout_reason');
     localStorage.setItem('access_token', newToken);
     setToken(newToken);
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    sessionStorage.setItem('manual_logout', 'true');
+    sessionStorage.removeItem('logout_reason');
+    try {
+      if (token) {
+        await api.post('/auth/logout');
+      }
+    } catch {
+      // Ignore background errors on logout
+    } finally {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      // Keep manual_logout active for 8 seconds to swallow any straggling 401s
+      setTimeout(() => {
+        sessionStorage.removeItem('manual_logout');
+      }, 8000);
+    }
+  };
+
+  const securityLogout = (reason: string) => {
+    sessionStorage.setItem('logout_reason', reason);
+    logout();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, securityLogout, loading }}>
       {children}
     </AuthContext.Provider>
   );

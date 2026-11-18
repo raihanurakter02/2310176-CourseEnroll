@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import api from '../api';
 import { AuthContext } from '../AuthContext';
@@ -18,9 +18,25 @@ const Login: React.FC = () => {
     return <Navigate to={`/${auth.user.role}/dashboard`} replace />;
   }
 
+  useEffect(() => {
+    // If user signed out manually, cleanly suppress any error toast
+    if (sessionStorage.getItem('manual_logout') === 'true') {
+      sessionStorage.removeItem('logout_reason');
+      sessionStorage.removeItem('manual_logout');
+      return;
+    }
+    const reason = sessionStorage.getItem('logout_reason');
+    if (reason) {
+      toast?.showToast(reason, 'error');
+      sessionStorage.removeItem('logout_reason');
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    sessionStorage.removeItem('manual_logout');
+    sessionStorage.removeItem('logout_reason');
 
     try {
       const params = new URLSearchParams();
@@ -69,7 +85,7 @@ const Login: React.FC = () => {
     <>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@500;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
       />
       <style>{`
         .chalkboard-login input.f:focus {
@@ -84,13 +100,15 @@ const Login: React.FC = () => {
           border-radius: 6px;
           background: transparent;
           color: #3b4658;
-          font: 700 15px 'Nunito', sans-serif;
+          font: 500 14px 'Inter', sans-serif;
+          letter-spacing: 0.01em;
           cursor: pointer;
           transition: background 0.15s ease, color 0.15s ease;
         }
         .chalkboard-login .hl.on {
           background: #ffe98a;
           color: #1b2a3a;
+          font-weight: 600;
         }
         .chalkboard-login .go:hover:not(:disabled) {
           background: #1d4a3e !important;
@@ -112,8 +130,8 @@ const Login: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '32px 24px',
-          fontFamily: "'Nunito', system-ui, sans-serif",
+          padding: '32px 16px',
+          fontFamily: "'Inter', system-ui, sans-serif",
           color: '#1b2a3a',
           overflow: 'hidden'
         }}
@@ -169,7 +187,7 @@ const Login: React.FC = () => {
             background: '#fffdf6',
             borderRadius: '8px',
             boxShadow: '0 30px 50px -16px rgba(0,0,0,0.6)',
-            padding: '46px 40px 36px 80px',
+            padding: 'clamp(28px, 5vw, 46px) clamp(20px, 5vw, 40px) clamp(24px, 4vw, 36px) clamp(24px, 8vw, 80px)',
             boxSizing: 'border-box'
           }}
         >
@@ -207,11 +225,12 @@ const Login: React.FC = () => {
             style={{
               display: 'block',
               marginBottom: '4px',
-              fontSize: '14px',
-              fontWeight: 800,
-              letterSpacing: '0.06em',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: '#3b4658'
+              color: '#3b4658',
+              fontFamily: "'Inter', sans-serif"
             }}
           >
             CourseEnroll
@@ -219,9 +238,9 @@ const Login: React.FC = () => {
 
           <h1
             style={{
-              margin: '0 0 4px',
+              margin: '0 0 6px',
               fontFamily: "'Caveat', cursive",
-              fontSize: '58px',
+              fontSize: 'clamp(40px, 8vw, 58px)',
               lineHeight: 1,
               fontWeight: 700,
               color: '#1b2a3a'
@@ -230,7 +249,7 @@ const Login: React.FC = () => {
             Welcome back!
           </h1>
 
-          <p style={{ margin: '0 0 20px', fontSize: '15px', color: '#3b4658' }}>
+          <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#5a6a7e', fontFamily: "'Inter', sans-serif", fontWeight: 400, lineHeight: 1.55 }}>
             Class is about to start. Sign in below.
           </p>
 
@@ -266,7 +285,7 @@ const Login: React.FC = () => {
           </div>
 
           <form onSubmit={handleLogin}>
-            <label htmlFor="e" style={{ display: 'block', fontSize: '14px', fontWeight: 800 }}>
+            <label htmlFor="e" style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#3b4658', marginBottom: '6px' }}>
               Email address
             </label>
             <input
@@ -287,12 +306,12 @@ const Login: React.FC = () => {
                 borderBottom: '2px solid #7d8cc0',
                 borderRadius: 0,
                 background: 'transparent',
-                font: "600 16px 'Nunito', sans-serif",
+                font: "400 15px 'Inter', sans-serif",
                 color: '#1b2a3a'
               }}
             />
 
-            <label htmlFor="p" style={{ display: 'block', fontSize: '14px', fontWeight: 800 }}>
+            <label htmlFor="p" style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#3b4658', marginBottom: '6px' }}>
               Password
             </label>
             <input
@@ -313,7 +332,7 @@ const Login: React.FC = () => {
                 borderBottom: '2px solid #7d8cc0',
                 borderRadius: 0,
                 background: 'transparent',
-                font: "600 16px 'Nunito', sans-serif",
+                font: "400 15px 'Inter', sans-serif",
                 color: '#1b2a3a'
               }}
             />
@@ -324,12 +343,13 @@ const Login: React.FC = () => {
               disabled={isLoading}
               style={{
                 width: '100%',
-                height: '54px',
+                height: '50px',
                 border: 0,
                 borderRadius: '10px',
                 background: '#2f6f5e',
                 color: '#ffffff',
-                font: "800 17px 'Nunito', sans-serif",
+                font: "600 15px 'Inter', sans-serif",
+                letterSpacing: '0.01em',
                 cursor: 'pointer'
               }}
             >
@@ -339,11 +359,13 @@ const Login: React.FC = () => {
 
           <p
             style={{
-              margin: '18px 0 0',
+              margin: '16px 0 0',
               textAlign: 'center',
-              fontSize: '14px',
-              lineHeight: 1.5,
-              color: '#3b4658'
+              fontSize: '13px',
+              lineHeight: 1.55,
+              color: '#3b4658',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 400
             }}
           >
             Need access? Contact your university administrator.
