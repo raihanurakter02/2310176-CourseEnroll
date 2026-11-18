@@ -136,7 +136,7 @@ def seed_bulk():
 
     user_map = {}
 
-    # Super Admin
+    # Super Admins (2 required by specification)
     admin_u = db.query(models.User).filter(models.User.email == "admin@university.edu").first()
     if not admin_u:
         admin_u = models.User(name="Admin User", email="admin@university.edu", password_hash=common_password_hash, role=models.UserRole.admin, token_version=10)
@@ -147,6 +147,17 @@ def seed_bulk():
         admin_u.token_version = 10
         admin_u.is_banned = False
     user_map["admin@university.edu"] = admin_u
+
+    admin_u2 = db.query(models.User).filter(models.User.email == "admin2@university.edu").first()
+    if not admin_u2:
+        admin_u2 = models.User(name="Secondary Administrator", email="admin2@university.edu", password_hash=common_password_hash, role=models.UserRole.admin, token_version=10)
+        db.add(admin_u2)
+        db.flush()
+    else:
+        admin_u2.password_hash = common_password_hash
+        admin_u2.token_version = 10
+        admin_u2.is_banned = False
+    user_map["admin2@university.edu"] = admin_u2
 
     # Faculty
     for name, email in faculty_list:

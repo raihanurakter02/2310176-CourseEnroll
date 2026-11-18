@@ -1,72 +1,113 @@
-# FastAPI + React Template
+# 🎓 CourseEnroll - Secure Enterprise Course Registration & Academic ERP
 
-FastAPI backend + Vite/React/TypeScript frontend, deployed to Vercel as one project.
+A production-ready academic ERP and course enrollment platform built with **React (TypeScript)**, **FastAPI (Python)**, and **PostgreSQL (Supabase)**. Fully implements **JWT Authentication**, **Role-Based Access Control (RBAC)**, **Admin Security Center**, **Real-Time Notification Websockets**, and **Automated Waitlist Promotion**.
 
+---
+
+## 🚀 Live Deployment URLs
+
+* **Frontend Application (Vercel)**: Deployed on Vercel with responsive desktop & mobile support.
+* **Backend API & Swagger Documentation**: [https://two310176-courseenroll.onrender.com/docs](https://two310176-courseenroll.onrender.com/docs)
+* **API Alternative OpenAPI Schema**: `https://two310176-courseenroll.onrender.com/redoc`
+
+---
+
+## 👥 Seeded Instructor & Evaluator Test Accounts
+
+All demo accounts use the standardized password: **`password123`**
+
+### 1. Administrator Accounts (At least 2 required)
+| Name | Email | Password | Primary Role & Features to Test |
+| :--- | :--- | :--- | :--- |
+| **Admin User** | `admin@university.edu` | `password123` | **Primary Admin**: Security Center, Approvals Queue, Session Revocation, User Bans. |
+| **Secondary Administrator** | `admin2@university.edu` | `password123` | **Co-Admin**: Verify Admin Immunity (Admins cannot ban or delete other admins). |
+
+### 2. Faculty / Instructor Accounts
+| Name | Email | Password | Assigned Courses |
+| :--- | :--- | :--- | :--- |
+| **Sayef Reyadh** | `sreyadh@gmail.com` | `password123` | `CSE220` (Data Structures), `CSE307` (SAD), `CSE472` (Cloud DevOps) |
+| **mr potato** | `potato@gmail.com` | `password123` | `CSE115` (C Programming), `CSE425` (SQT & Testing) |
+| **Dr. Rubaiyat Islam** | `rubaiyat@gmail.com` | `password123` | `CSE311` (DBMS), `CSE499` (Senior Capstone) |
+
+### 3. Student Accounts
+| Name | Email | Password | Academic Profile Highlights |
+| :--- | :--- | :--- | :--- |
+| **Mila Vance (Showcase)** | `mila@gmail.com` | `password123` | **GPA 3.75**, 12 completed credits, 12 active credits, printable enrollment slip, weekly schedule timetable. |
+| **Raihanur Akter** | `rai@gmail.com` | `password123` | Active student registrations, catalog enrollment. |
+| **Alex Turner** | `alex@gmail.com` | `password123` | Active waitlist testing on `CSE425` and `CSE472`. |
+| **Cat Williams** | `cat@gmail.com` | `password123` | Standard student account with course history. |
+
+---
+
+## 🔐 Security & RBAC Implementation Highlights
+
+### 2.1 Authentication & JWT
+* **Password Hashing**: Stored with industry-standard **bcrypt** salt & hash algorithms. Plain text passwords are never stored.
+* **Short-Lived Signed JWTs**: Signed with HS256 and expiration set to 15 minutes or less (`ACCESS_TOKEN_EXPIRE_MINUTES`). Each token contains `sub` (email), `id`, `role`, `name`, `tv` (token version), and unique `jti` (JWT ID).
+* **Token Verification & Rejection**: Verified on every protected endpoint. Missing, tampered, expired, or blacklisted tokens return **401 Unauthorized**.
+* **Device Session Tracking & Token Blacklist**: Every login records IP address, User-Agent, and device hint into `UserSession`. Logout invalidates the active `jti` via `TokenBlacklist`.
+* **Account Lockout Protection**: 5 consecutive failed login attempts trigger automated 30-minute lockout.
+
+### 2.2 Reusable RBAC & Authorization
+* **Single Reusable RBAC Module**: Enforced via FastAPI dependencies (`allow_admin_only`, `allow_faculty_only`, `allow_all_roles`) rather than scattered checks.
+* **Safety Rules**:
+  * An administrator cannot change their own role or ban another administrator.
+  * Banned users (`is_banned = True`) are blocked on the very next request via token and session checks.
+* **Ownership Rules**: Students can only inspect and drop their own course enrollments.
+
+### 2.3 Admin Security Center & Moderation
+* **Active Device Sessions**: Inspect real-time client sessions across Windows, macOS, Linux, iOS, and Android with one-click revocation.
+* **Emergency Force Logout All**: Global kill-switch that increments `token_version` for all users, instantly invalidating all tokens.
+* **Security Audit Logs**: Track `login_success`, `login_failed`, `token_malformed`, `session_revoked`, and `user_banned` with IP, User-Agent, and timestamp.
+* **Content Moderation & Approvals**: Review pending registrations, approve or reject requests, and broadcast university-wide notices.
+
+---
+
+## 🧪 Automated Pytest Suite
+
+Run the full automated test suite verifying login, token rejection, and 4 RBAC rules:
+
+```bash
+# Activate your virtualenv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # macOS / Linux
+
+# Run pytest
+pytest tests/test_auth_and_rbac.py -v
 ```
-backend/    FastAPI app (routes under /api)
-frontend/   Vite + React + TypeScript
-vercel.json Vercel setup: /api/* goes to backend, everything else to frontend
-```
 
-## Requirements
+### Verified Test Cases:
+1. `test_login_success_returns_jwt`: Valid credentials return signed JWT access token.
+2. `test_login_failure_invalid_password`: Invalid credentials reject with `401 Unauthorized`.
+3. `test_missing_token_rejection`: Unauthenticated requests to protected routes reject with `401`.
+4. `test_tampered_token_rejection`: Tampered JWT signature rejects with `401`.
+5. `test_rbac_rule_1_student_blocked_from_admin_security`: Student accessing `/admin/security/stats` receives `403 Forbidden`.
+6. `test_rbac_rule_2_student_blocked_from_broadcasting_announcements`: Student posting announcement receives `403 Forbidden`.
+7. `test_rbac_rule_3_faculty_blocked_from_admin_user_management`: Faculty executing force-logout receives `403 Forbidden`.
+8. `test_rbac_rule_4_safety_admin_cannot_ban_admin`: Admin attempting to ban another admin receives `400 Bad Request`.
 
-- [Python](https://www.python.org/downloads/) 3.10+
-- [Node.js](https://nodejs.org/) 22+
+---
 
-> On macOS/Linux, use `python3` instead of `python`.
+## 🛠️ Local Development Setup
 
-## Run locally
-
-**Backend** (terminal 1):
-
+### 1. Backend (FastAPI)
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\Activate.ps1      # macOS/Linux: source .venv/bin/activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 fastapi dev main.py
 ```
 
-**Frontend** (terminal 2):
-
+### 2. Frontend (React + Vite)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and click **Say hello**. Vite forwards `/api` requests to the backend on port 8000.
-
-To run it the way Vercel does instead, from the project root:
-
+### 3. Database Re-Seeding
+To reset and re-populate the entire enterprise dataset (51 users, 25 courses, 345 enrollments, 50 sessions, 636 attendance records, 12 announcements, 25 sessions, 85 security events):
 ```bash
-npm install -g vercel
-vercel dev -L
+python backend/seed_bulk_dataset.py
 ```
-
-> Add new Python packages to `backend/requirements.txt`.
-
-## Class exercise
-
-Send an ID, name and email from React to FastAPI and show the reply.
-
-1. In `backend/main.py`, uncomment the `EXERCISE (part 1)` block. Try `POST /api/user` at http://localhost:8000/docs.
-2. In `frontend/src/App.tsx`, uncomment `<UserForm />` and the `UserForm` function (`EXERCISE (part 2)`).
-3. Fill in the form at http://localhost:5173 and click **Send**.
-
-Try an invalid email (send it from `/docs`, since the browser blocks it in the form): FastAPI returns `422` without any extra code.
-
-## Deploy to Vercel
-
-1. Push the repo to GitHub.
-2. Go to https://vercel.com/new, import the repo and click **Deploy**. Keep **Root Directory** as `./`.
-
-Every push to `main` redeploys automatically. Or deploy from your machine with `vercel --prod`.
-
-## Troubleshooting
-
-- **"Running scripts is disabled" in PowerShell:** run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
-- **`fastapi` not found:** activate the virtual environment first.
-- **`Request failed: 500` in the app:** the backend isn't running.
-- **App at localhost:8000 shows an old version:** delete `frontend/dist`.
-- **Vercel build fails:** check **Build Logs** in the Vercel dashboard, and make sure `npm run build` works in `frontend/`.
