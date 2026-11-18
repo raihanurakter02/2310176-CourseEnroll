@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import { AuthContext } from '../AuthContext';
 import { ToastContext } from '../ToastContext';
 import SkeletonCard from '../components/SkeletonCard';
@@ -67,15 +67,19 @@ const ScheduleTimetable: React.FC = () => {
   const auth = useContext(AuthContext);
   const toast = useContext(ToastContext);
 
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const isStudent = auth?.user?.role === 'student';
+  const cachedCourses = isStudent ? getCachedData<Course[]>('/courses') : getCachedData<Course[]>('/faculty/courses');
+  const cachedEnrollments = getCachedData<Enrollment[]>('/enrollments/my');
+
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(() => cachedEnrollments || []);
+  const [isLoading, setIsLoading] = useState(() => !cachedCourses || cachedCourses.length === 0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const isStudent = auth?.user?.role === 'student';
-
   const fetchData = async () => {
-    setIsLoading(true);
+    if (!cachedCourses) {
+      setIsLoading(true);
+    }
     try {
       if (isStudent) {
         const [enrollRes, courseRes] = await Promise.all([

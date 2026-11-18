@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
 
 interface Course {
@@ -34,11 +34,14 @@ const COURSE_COLORS = [
 
 const FacultyDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedCourses = getCachedData<Course[]>('/faculty/courses');
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
+  const [isLoading, setIsLoading] = useState(() => !cachedCourses || cachedCourses.length === 0);
 
   useEffect(() => {
-    setIsLoading(true);
+    if (!cachedCourses) {
+      setIsLoading(true);
+    }
     api.get('/faculty/courses')
       .then(res => setCourses(res.data || []))
       .catch(() => {})

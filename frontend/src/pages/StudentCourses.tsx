@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
@@ -26,17 +26,21 @@ interface Enrollment {
 }
 
 const StudentCourses: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
+  const cachedCourses = getCachedData<Course[]>('/courses');
+  const cachedEnrollments = getCachedData<Enrollment[]>('/enrollments/my');
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
+  const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>(() => cachedEnrollments || []);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedCourses || cachedCourses.length === 0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const toast = useContext(ToastContext);
 
   const fetchCatalogAndEnrollments = async () => {
-    setIsPageLoading(true);
+    if (!getCachedData('/courses')) {
+      setIsPageLoading(true);
+    }
     try {
       const [coursesRes, enrollRes] = await Promise.all([
         api.get('/courses'),

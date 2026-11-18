@@ -1,11 +1,19 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import api from '../api';
+import api, { getCachedData } from '../api';
 
 const AdminDashboard: React.FC = () => {
   const auth = useContext(AuthContext);
-  const [stats, setStats] = useState({ courses: 0, students: 0, faculty: 0 });
+  const [stats, setStats] = useState(() => {
+    const cachedCourses = getCachedData<any[]>('/courses') || [];
+    const cachedUsers = getCachedData<any[]>('/users') || [];
+    return {
+      courses: cachedCourses.length,
+      students: cachedUsers.filter((u: any) => u.role === 'student').length,
+      faculty: cachedUsers.filter((u: any) => u.role === 'faculty').length,
+    };
+  });
 
   useEffect(() => {
     if (auth?.user) {

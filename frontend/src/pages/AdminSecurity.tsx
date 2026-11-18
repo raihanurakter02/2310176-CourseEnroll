@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import { ToastContext } from '../ToastContext';
 import Modal from '../components/Modal';
 
@@ -173,8 +173,13 @@ const AdminSecurity: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<Tab>('Overview');
 
+  const cachedStats = getCachedData<SecurityStats>('/admin/security/stats');
+  const cachedSessions = getCachedData<Session[]>('/admin/security/sessions');
+  const cachedEvents = getCachedData<SecurityEvent[]>('/admin/security/events?limit=50&offset=0');
+  const cachedUsers = getCachedData<User[]>('/users');
+
   // Overview
-  const [stats, setStats] = useState<SecurityStats>({
+  const [stats, setStats] = useState<SecurityStats>(() => cachedStats || {
     total_events: 0,
     critical_events_24h: 0,
     active_sessions: 0,
@@ -186,16 +191,16 @@ const AdminSecurity: React.FC = () => {
   const [forceLogoutLoading, setForceLogoutLoading] = useState(false);
 
   // Sessions
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<Session[]>(() => cachedSessions || []);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [revokingId, setRevokingId] = useState<number | null>(null);
 
   // Events
-  const [events, setEvents] = useState<SecurityEvent[]>([]);
+  const [events, setEvents] = useState<SecurityEvent[]>(() => cachedEvents || []);
   const [eventsLoading, setEventsLoading] = useState(false);
 
   // Users
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(() => cachedUsers || []);
   const [usersLoading, setUsersLoading] = useState(false);
   const [banModalUser, setBanModalUser] = useState<User | null>(null);
   const [banReason, setBanReason] = useState('');
@@ -205,7 +210,7 @@ const AdminSecurity: React.FC = () => {
   // ── Fetchers ─────────────────────────────────────────────────────────────────
 
   const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
+    if (!cachedStats) setStatsLoading(true);
     try {
       const res = await api.get('/admin/security/stats');
       if (res.data) setStats(res.data);
@@ -214,10 +219,10 @@ const AdminSecurity: React.FC = () => {
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [cachedStats]);
 
   const fetchSessions = useCallback(async () => {
-    setSessionsLoading(true);
+    if (!cachedSessions) setSessionsLoading(true);
     try {
       const res = await api.get('/admin/security/sessions');
       setSessions(res.data || []);
@@ -227,10 +232,10 @@ const AdminSecurity: React.FC = () => {
     } finally {
       setSessionsLoading(false);
     }
-  }, [toast]);
+  }, [cachedSessions, toast]);
 
   const fetchEvents = useCallback(async () => {
-    setEventsLoading(true);
+    if (!cachedEvents) setEventsLoading(true);
     try {
       const res = await api.get('/admin/security/events?limit=50&offset=0');
       setEvents(res.data || []);
@@ -240,10 +245,10 @@ const AdminSecurity: React.FC = () => {
     } finally {
       setEventsLoading(false);
     }
-  }, [toast]);
+  }, [cachedEvents, toast]);
 
   const fetchUsers = useCallback(async () => {
-    setUsersLoading(true);
+    if (!cachedUsers) setUsersLoading(true);
     try {
       const res = await api.get('/users');
       setUsers(res.data || []);

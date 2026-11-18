@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
@@ -7,8 +7,9 @@ import { ToastContext } from '../ToastContext';
 interface User { id: number; name: string; email: string; role: string; }
 
 const AdminUsers: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const cachedUsers = getCachedData<User[]>('/users');
+  const [users, setUsers] = useState<User[]>(() => cachedUsers || []);
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedUsers || cachedUsers.length === 0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
   // Modals state
@@ -20,13 +21,13 @@ const AdminUsers: React.FC = () => {
   const toast = useContext(ToastContext);
 
   const fetchUsers = () => {
-    setIsPageLoading(true);
-    setTimeout(() => {
-      api.get('/users')
-        .then(res => setUsers(res.data))
-        .catch(() => toast?.showToast('Failed to load users', 'error'))
-        .finally(() => setIsPageLoading(false));
-    }, 600);
+    if (!cachedUsers) {
+      setIsPageLoading(true);
+    }
+    api.get('/users')
+      .then(res => setUsers(res.data))
+      .catch(() => toast?.showToast('Failed to load users', 'error'))
+      .finally(() => setIsPageLoading(false));
   };
 
   useEffect(() => fetchUsers(), []);

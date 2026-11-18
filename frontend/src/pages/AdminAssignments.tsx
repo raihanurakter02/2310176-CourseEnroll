@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
@@ -19,9 +19,14 @@ interface User {
 }
 
 const AdminAssignments: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [faculty, setFaculty] = useState<User[]>([]);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const cachedCourses = getCachedData<Course[]>('/courses');
+  const cachedUsers = getCachedData<User[]>('/users');
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
+  const [faculty, setFaculty] = useState<User[]>(() => {
+    if (!cachedUsers) return [];
+    return cachedUsers.filter(u => u.role === 'faculty');
+  });
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedCourses || !cachedUsers);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -38,7 +43,9 @@ const AdminAssignments: React.FC = () => {
   const toast = useContext(ToastContext);
 
   const fetchData = async () => {
-    setIsPageLoading(true);
+    if (!cachedCourses || !cachedUsers) {
+      setIsPageLoading(true);
+    }
     try {
       const [coursesRes, usersRes] = await Promise.all([
         api.get('/courses'),

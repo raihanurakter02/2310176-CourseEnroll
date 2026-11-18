@@ -1,14 +1,15 @@
 import asyncio
 import datetime
+import time
 from typing import Any, Optional
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy import text
+from sqlalchemy import text, func
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from backend import auth, models, schemas
 from backend.database import engine, get_db
@@ -197,6 +198,50 @@ def log_security_event(
 
 
 # ---------------------------------------------------------------------------
+# LIGHTNING IN-MEMORY AUTH & DATA CACHES
+# ---------------------------------------------------------------------------
+_auth_cache: dict[str, tuple[models.User, float]] = {}
+_data_cache: dict[str, tuple[Any, float]] = {}
+
+def get_auth_cached(jti: str) -> Optional[models.User]:
+    entry = _auth_cache.get(jti)
+    if entry and time.time() < entry[1]:
+        return entry[0]
+    return None
+
+def set_auth_cached(jti: str, user: models.User, ttl: float = 30.0):
+    _auth_cache[jti] = (user, time.time() + ttl)
+
+def invalidate_auth_cache(jti: Optional[str] = None, user_id: Optional[int] = None):
+    global _auth_cache
+    if jti:
+        _auth_cache.pop(jti, None)
+    elif user_id:
+        _auth_cache = {k: v for k, v in _auth_cache.items() if getattr(v[0], 'id', None) != user_id}
+    else:
+        _auth_cache.clear()
+
+def get_data_cached(key: str) -> Optional[Any]:
+    entry = _data_cache.get(key)
+    if entry and time.time() < entry[1]:
+        return entry[0]
+    return None
+
+def set_data_cached(key: str, data: Any, ttl: float = 30.0):
+    _data_cache[key] = (data, time.time() + ttl)
+
+def invalidate_data_cache(*prefixes: str):
+    global _data_cache
+    if not prefixes:
+        _data_cache.clear()
+        return
+    _data_cache = {
+        k: v for k, v in _data_cache.items()
+        if not any(k.startswith(p) for p in prefixes)
+    }
+
+
+# ---------------------------------------------------------------------------
 # AUTH / GET CURRENT USER
 # ---------------------------------------------------------------------------
 
@@ -269,6 +314,28 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Fast path: in-memory auth cache (0.0001 ms lookup)
+    cached_user = get_auth_cached(jti)
+    if cached_user is not None:
+        if cached_user.is_banned:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Account suspended: {cached_user.ban_reason or 'Contact administrator'}",
+            )
+        if cached_user.locked_until and cached_user.locked_until > datetime.datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account temporarily locked",
+            )
+        user_tv = cached_user.token_version if cached_user.token_version is not None else 0
+        if tv is not None and tv < user_tv:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session revoked (global logout)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return cached_user
+
     # --- Fetch user ---
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
@@ -335,9 +402,16 @@ def get_current_user(
                 user_agent=ua,
                 detail=f"IP mismatch detected (Origin: {session_row.ip_address}, Current: {ip})",
             )
-        session_row.last_seen = datetime.datetime.utcnow()
-        db.commit()
+        now = datetime.datetime.utcnow()
+        # Throttled update: only write last_seen if 60s passed to eliminate write lock latency on read queries
+        if not session_row.last_seen or (now - session_row.last_seen).total_seconds() > 60:
+            session_row.last_seen = now
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
 
+    set_auth_cached(jti, user, ttl=30.0)
     return user
 
 
@@ -487,6 +561,7 @@ def logout_user(
                 if not existing:
                     db.add(models.TokenBlacklist(jti=jti, user_id=current_user.id, reason="user_logout"))
                 db.query(models.UserSession).filter(models.UserSession.jti == jti).update({"is_active": False})
+                invalidate_auth_cache(jti=jti)
                 log_security_event(
                     db,
                     event_type="user_logout",
@@ -531,7 +606,12 @@ allow_student_only = RoleChecker([models.UserRole.student])
 # ---------------------------------------------------------------------------
 @app.get("/semesters", response_model=list[schemas.SemesterResponse])
 def get_semesters(db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
-    return db.query(models.Semester).all()
+    cached = get_data_cached("semesters")
+    if cached is not None:
+        return cached
+    res = db.query(models.Semester).all()
+    set_data_cached("semesters", res, ttl=60.0)
+    return res
 
 
 @app.post("/semesters", response_model=schemas.SemesterResponse, status_code=status.HTTP_201_CREATED)
@@ -548,6 +628,7 @@ def create_semester(semester: schemas.SemesterCreate, db: Session = Depends(get_
     )
     db.add(new_semester)
     db.commit()
+    invalidate_data_cache("semesters")
     db.refresh(new_semester)
     return new_semester
 
@@ -572,6 +653,7 @@ def update_semester(semester_id: int, semester_data: schemas.SemesterUpdate, db:
         setattr(target_semester, "is_active", False)
 
     db.commit()
+    invalidate_data_cache("semesters")
     db.refresh(target_semester)
     return target_semester
 
@@ -586,6 +668,7 @@ def activate_semester(semester_id: int, db: Session = Depends(get_db), current_u
     setattr(target_semester, "is_active", True)
     
     db.commit()
+    invalidate_data_cache("semesters")
     db.refresh(target_semester)
     return target_semester
 
@@ -595,17 +678,33 @@ def activate_semester(semester_id: int, db: Session = Depends(get_db), current_u
 # ---------------------------------------------------------------------------
 @app.get("/courses", response_model=list[schemas.CourseResponse])
 def get_courses(db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
+    cached_courses = get_data_cached("courses")
+    if cached_courses is not None:
+        return cached_courses
+
     courses = db.query(models.Course).all()
+    
+    # 1 single fast aggregated query for all enrollment counts across courses
+    counts = (
+        db.query(
+            models.Enrollment.course_id,
+            models.Enrollment.status,
+            func.count(models.Enrollment.id)
+        )
+        .filter(models.Enrollment.status.in_([models.EnrollmentStatus.approved, models.EnrollmentStatus.waitlisted]))
+        .group_by(models.Enrollment.course_id, models.Enrollment.status)
+        .all()
+    )
+    enrolled_map: dict[int, int] = {}
+    waitlist_map: dict[int, int] = {}
+    for cid, st, cnt in counts:
+        if st == models.EnrollmentStatus.approved:
+            enrolled_map[cid] = cnt
+        elif st == models.EnrollmentStatus.waitlisted:
+            waitlist_map[cid] = cnt
+
     results = []
     for c in courses:
-        enrolled_c = db.query(models.Enrollment).filter(
-            models.Enrollment.course_id == c.id,
-            models.Enrollment.status == models.EnrollmentStatus.approved,
-        ).count()
-        waitlisted_c = db.query(models.Enrollment).filter(
-            models.Enrollment.course_id == c.id,
-            models.Enrollment.status == models.EnrollmentStatus.waitlisted,
-        ).count()
         results.append(
             schemas.CourseResponse(
                 id=c.id,
@@ -620,10 +719,11 @@ def get_courses(db: Session = Depends(get_db), current_user: models.User = Depen
                 room=c.room or "Hall 101",
                 faculty_id=c.faculty_id,
                 semester_id=c.semester_id,
-                enrolled_count=enrolled_c,
-                waitlist_count=waitlisted_c,
+                enrolled_count=enrolled_map.get(c.id, 0),
+                waitlist_count=waitlist_map.get(c.id, 0),
             )
         )
+    set_data_cached("courses", results, ttl=20.0)
     return results
 
 
@@ -663,6 +763,7 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db), c
     new_course = models.Course(**course.dict())
     db.add(new_course)
     db.commit()
+    invalidate_data_cache("courses")
     db.refresh(new_course)
     return new_course
 
@@ -677,6 +778,7 @@ def update_course(course_id: int, course_data: schemas.CourseCreate, db: Session
         setattr(course, key, value)
         
     db.commit()
+    invalidate_data_cache("courses")
     db.refresh(course)
     return course
 
@@ -690,6 +792,7 @@ def delete_course(course_id: int, db: Session = Depends(get_db), current_user: m
     db.query(models.Enrollment).filter(models.Enrollment.course_id == course_id).delete()
     db.delete(course)
     db.commit()
+    invalidate_data_cache("courses")
 
 
 @app.put("/courses/{course_id}/faculty")
@@ -704,6 +807,7 @@ def assign_faculty(course_id: int, faculty_id: int, db: Session = Depends(get_db
 
     setattr(course, "faculty_id", faculty.id)
     db.commit()
+    invalidate_data_cache("courses")
     return {"message": "Faculty assigned successfully"}
 
 @app.delete("/courses/{course_id}/faculty", status_code=status.HTTP_204_NO_CONTENT)
@@ -715,6 +819,7 @@ def remove_faculty_assignment(course_id: int, db: Session = Depends(get_db), cur
     # Remove the assigned faculty member
     setattr(course, "faculty_id", None)
     db.commit()
+    invalidate_data_cache("courses")
     return
 
 
@@ -791,13 +896,19 @@ def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends
     )
     db.add(new_enrollment)
     db.commit()
+    invalidate_data_cache("courses")
     db.refresh(new_enrollment)
     return new_enrollment
 
 
 @app.get("/enrollments/my", response_model=list[schemas.EnrollmentResponse])
 def get_my_enrollments(db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
-    return db.query(models.Enrollment).filter(models.Enrollment.student_id == current_user.id).all()
+    return (
+        db.query(models.Enrollment)
+        .options(joinedload(models.Enrollment.course))
+        .filter(models.Enrollment.student_id == current_user.id)
+        .all()
+    )
 
 
 @app.delete("/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -823,6 +934,7 @@ def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user:
 
     db.delete(enrollment)
     db.commit()
+    invalidate_data_cache("courses")
 
     # Automatic Waitlist Promotion: promote earliest waitlisted student when a seat opens up
     if was_approved:
@@ -861,10 +973,15 @@ def get_course_roster(course_id: int, db: Session = Depends(get_db), current_use
     ).first()
     if not course:
         raise HTTPException(status_code=403, detail="Not authorized to view this course roster")
-    return db.query(models.Enrollment).filter(
-        models.Enrollment.course_id == course_id,
-        models.Enrollment.status == models.EnrollmentStatus.approved,
-    ).all()
+    return (
+        db.query(models.Enrollment)
+        .options(joinedload(models.Enrollment.student))
+        .filter(
+            models.Enrollment.course_id == course_id,
+            models.Enrollment.status == models.EnrollmentStatus.approved,
+        )
+        .all()
+    )
 
 
 @app.put("/enrollments/{enrollment_id}/grade")
@@ -932,9 +1049,13 @@ def submit_course_attendance(course_id: int, attendance_data: schemas.Attendance
 
 @app.get("/faculty/courses/{course_id}/attendance/history", response_model=list[schemas.AttendanceResponse])
 def get_course_attendance_history(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_faculty_only)):  # noqa: B008
-    return db.query(models.Attendance).join(models.Enrollment).filter(
-        models.Enrollment.course_id == course_id
-    ).all()
+    return (
+        db.query(models.Attendance)
+        .options(joinedload(models.Attendance.session))
+        .join(models.Enrollment)
+        .filter(models.Enrollment.course_id == course_id)
+        .all()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -942,7 +1063,12 @@ def get_course_attendance_history(course_id: int, db: Session = Depends(get_db),
 # ---------------------------------------------------------------------------
 @app.get("/users", response_model=list[schemas.UserResponse])
 def get_all_users(db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
-    return db.query(models.User).all()
+    cached = get_data_cached("admin_users_list")
+    if cached is not None:
+        return cached
+    res = db.query(models.User).all()
+    set_data_cached("admin_users_list", res, ttl=20.0)
+    return res
 
 
 @app.put("/users/{user_id}", response_model=schemas.UserResponse)
@@ -996,6 +1122,7 @@ def update_enrollment_status(enrollment_id: int, status_update: schemas.Enrollme
 
     setattr(enrollment, "status", status_update.status)
     db.commit()
+    invalidate_data_cache("courses")
     db.refresh(enrollment)
 
     course = db.query(models.Course).filter(models.Course.id == enrollment.course_id).first()
@@ -1086,6 +1213,8 @@ def revoke_session(
         db.add(models.TokenBlacklist(jti=sess.jti, user_id=sess.user_id, reason="admin_revoke"))
 
     sess.is_active = False
+    invalidate_auth_cache(jti=sess.jti)
+    invalidate_data_cache("admin_security_stats")
 
     log_security_event(
         db,
@@ -1129,6 +1258,9 @@ def ban_user(
             db.add(models.TokenBlacklist(jti=sess.jti, user_id=user_id, reason="user_banned"))
         sess.is_active = False
 
+    invalidate_auth_cache(user_id=user_id)
+    invalidate_data_cache("admin_security_stats", "admin_users_list")
+
     log_security_event(
         db,
         event_type="user_banned",
@@ -1157,6 +1289,8 @@ def unban_user(
 
     user.is_banned = False
     user.ban_reason = None
+    invalidate_auth_cache(user_id=user_id)
+    invalidate_data_cache("admin_security_stats", "admin_users_list")
 
     log_security_event(
         db,
@@ -1187,6 +1321,9 @@ def force_logout_all(
 
     # Also mark all active sessions inactive
     db.query(models.UserSession).filter(models.UserSession.is_active == True).update({"is_active": False})
+    invalidate_auth_cache()
+    invalidate_data_cache("admin_security_stats")
+    db.query(models.UserSession).filter(models.UserSession.is_active == True).update({"is_active": False})
 
     log_security_event(
         db,
@@ -1208,6 +1345,10 @@ def security_stats(
     current_user: models.User = Depends(allow_admin_only),
 ):
     """Return aggregate security statistics."""
+    cached = get_data_cached("admin_security_stats")
+    if cached is not None:
+        return cached
+
     now = datetime.datetime.utcnow()
     since_24h = now - datetime.timedelta(hours=24)
 
@@ -1233,13 +1374,15 @@ def security_stats(
         .count()
     )
 
-    return schemas.SecurityStatsResponse(
+    stats = schemas.SecurityStatsResponse(
         total_events=total_events,
         critical_events_24h=critical_events_24h,
         active_sessions=active_sessions,
         banned_users=banned_users,
         failed_logins_24h=failed_logins_24h,
     )
+    set_data_cached("admin_security_stats", stats, ttl=15.0)
+    return stats
 
 
 # ---------------------------------------------------------------------------
@@ -1254,11 +1397,21 @@ def get_announcements(
     """Retrieve announcements tailored to the current user's role with read status."""
     role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
     
-    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
-    if role_str != "admin":
-        query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
-        
-    announcements = query.order_by(models.Announcement.created_at.desc()).all()
+    cached_all = get_data_cached("active_announcements")
+    if cached_all is None:
+        cached_all = (
+            db.query(models.Announcement)
+            .options(joinedload(models.Announcement.author))
+            .filter(models.Announcement.is_active == True)
+            .order_by(models.Announcement.created_at.desc())
+            .all()
+        )
+        set_data_cached("active_announcements", cached_all, ttl=20.0)
+
+    if role_str == "admin":
+        announcements = cached_all
+    else:
+        announcements = [a for a in cached_all if a.target_role in ("all", role_str)]
     
     # Get all read announcement IDs for this user
     read_ids = {
@@ -1295,19 +1448,25 @@ def get_unread_count(
 ):
     """Return count of unread announcements for current user."""
     role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-    
-    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
+    cache_key = f"unread_{current_user.id}_{role_str}"
+    cached = get_data_cached(cache_key)
+    if cached is not None:
+        return schemas.UnreadCountResponse(unread_count=cached)
+
+    read_subquery = (
+        db.query(models.AnnouncementRead.announcement_id)
+        .filter(models.AnnouncementRead.user_id == current_user.id)
+        .subquery()
+    )
+    query = db.query(models.Announcement).filter(
+        models.Announcement.is_active == True,
+        ~models.Announcement.id.in_(read_subquery)
+    )
     if role_str != "admin":
         query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
         
-    all_announcements = query.all()
-    read_ids = {
-        r.announcement_id
-        for r in db.query(models.AnnouncementRead)
-        .filter(models.AnnouncementRead.user_id == current_user.id)
-        .all()
-    }
-    unread = sum(1 for a in all_announcements if a.id not in read_ids)
+    unread = query.count()
+    set_data_cached(cache_key, unread, ttl=15.0)
     return schemas.UnreadCountResponse(unread_count=unread)
 
 
@@ -1328,6 +1487,7 @@ def create_announcement(
     )
     db.add(new_announcement)
     db.commit()
+    invalidate_data_cache("active_announcements", "unread_")
     db.refresh(new_announcement)
     
     log_security_event(
@@ -1386,6 +1546,7 @@ def update_announcement(
         setattr(announcement, key, value)
         
     db.commit()
+    invalidate_data_cache("active_announcements", "unread_")
     db.refresh(announcement)
     return schemas.AnnouncementResponse(
         id=announcement.id,
@@ -1413,6 +1574,7 @@ def delete_announcement(
         raise HTTPException(status_code=404, detail="Announcement not found")
     db.delete(announcement)
     db.commit()
+    invalidate_data_cache("active_announcements", "unread_")
 
 
 @app.post("/announcements/{announcement_id}/read")
@@ -1433,6 +1595,7 @@ def mark_announcement_read(
     if not existing:
         db.add(models.AnnouncementRead(announcement_id=announcement_id, user_id=current_user.id))
         db.commit()
+        invalidate_data_cache(f"unread_{current_user.id}")
     return {"message": "Marked as read"}
 
 
@@ -1443,7 +1606,11 @@ def mark_all_announcements_read(
 ):
     """Mark all eligible announcements as read for the current user."""
     role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
+    query = (
+        db.query(models.Announcement)
+        .options(joinedload(models.Announcement.author))
+        .filter(models.Announcement.is_active == True)
+    )
     if role_str != "admin":
         query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
     eligible = query.all()
@@ -1459,4 +1626,5 @@ def mark_all_announcements_read(
         if a.id not in read_ids:
             db.add(models.AnnouncementRead(announcement_id=a.id, user_id=current_user.id))
     db.commit()
+    invalidate_data_cache(f"unread_{current_user.id}")
     return {"message": "All marked as read"}

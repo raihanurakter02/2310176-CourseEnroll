@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
@@ -18,8 +18,9 @@ interface Announcement {
 }
 
 const AnnouncementsInbox: React.FC = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedAnnouncements = getCachedData<Announcement[]>('/announcements');
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => cachedAnnouncements || []);
+  const [isLoading, setIsLoading] = useState(() => !cachedAnnouncements || cachedAnnouncements.length === 0);
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'important'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
@@ -27,7 +28,9 @@ const AnnouncementsInbox: React.FC = () => {
   const toast = useContext(ToastContext);
 
   const fetchAnnouncements = async () => {
-    setIsLoading(true);
+    if (!cachedAnnouncements) {
+      setIsLoading(true);
+    }
     try {
       const res = await api.get('/announcements');
       setAnnouncements(res.data || []);

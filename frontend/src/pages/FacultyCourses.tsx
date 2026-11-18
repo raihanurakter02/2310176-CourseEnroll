@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
 
@@ -14,18 +14,20 @@ interface Course {
 }
 
 const FacultyCourses: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const cachedCourses = getCachedData<Course[]>('/faculty/courses');
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedCourses || cachedCourses.length === 0);
   const toast = useContext(ToastContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => {
-      api.get('/faculty/courses')
-        .then(res => setCourses(res.data))
-        .catch((err: any) => toast?.showToast(err.response?.data?.detail || 'Failed to load assigned classes', 'error'))
-        .finally(() => setIsPageLoading(false));
-    }, 600);
+    if (!cachedCourses) {
+      setIsPageLoading(true);
+    }
+    api.get('/faculty/courses')
+      .then(res => setCourses(res.data))
+      .catch((err: any) => toast?.showToast(err.response?.data?.detail || 'Failed to load assigned classes', 'error'))
+      .finally(() => setIsPageLoading(false));
   }, [toast]);
 
   return (

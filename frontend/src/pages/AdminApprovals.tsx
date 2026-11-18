@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
 
@@ -13,12 +13,26 @@ interface Enrollment {
 }
 
 const AdminApprovals: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const cachedEnrollments = getCachedData<Enrollment[]>('/enrollments');
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(() => {
+    if (!cachedEnrollments) return [];
+    const cachedUsers = getCachedData<any[]>('/users') || [];
+    const cachedCourses = getCachedData<any[]>('/courses') || [];
+    return cachedEnrollments
+      .filter((e: any) => e.status === 'pending')
+      .map((e: any) => ({
+        ...e,
+        student: cachedUsers.find((u: any) => u.id === e.student_id),
+        course: cachedCourses.find((c: any) => c.id === e.course_id)
+      }));
+  });
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedEnrollments);
   const toast = useContext(ToastContext);
 
   const fetchEnrollments = async () => {
-    setIsPageLoading(true);
+    if (!cachedEnrollments) {
+      setIsPageLoading(true);
+    }
     try {
       const [enrollRes, usersRes, coursesRes] = await Promise.all([
         api.get('/enrollments'),

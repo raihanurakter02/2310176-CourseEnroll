@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import { AuthContext } from '../AuthContext';
 
 interface Course {
@@ -31,8 +31,8 @@ const StudentDashboard: React.FC = () => {
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(() => getCachedData<Enrollment[]>('/enrollments/my') || []);
+  const [courses, setCourses] = useState<Course[]>(() => getCachedData<Course[]>('/courses') || []);
 
   useEffect(() => {
     Promise.all([

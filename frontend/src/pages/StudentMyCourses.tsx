@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import SkeletonCard from '../components/SkeletonCard';
 import { ToastContext } from '../ToastContext';
@@ -27,18 +27,22 @@ interface Enrollment {
 type FilterTab = 'all' | 'approved' | 'waitlisted' | 'pending' | 'rejected';
 
 const StudentMyCourses: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const cachedEnrollments = getCachedData<Enrollment[]>('/enrollments/my');
+  const cachedCourses = getCachedData<Course[]>('/courses');
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(() => cachedEnrollments || []);
+  const [courses, setCourses] = useState<Course[]>(() => cachedCourses || []);
   const [selectedAction, setSelectedAction] = useState<Enrollment | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(() => !cachedEnrollments);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
   const toast = useContext(ToastContext);
   const navigate = useNavigate();
 
   const fetchData = async () => {
-    setIsPageLoading(true);
+    if (!getCachedData('/enrollments/my')) {
+      setIsPageLoading(true);
+    }
     try {
       const [enrollRes, courseRes] = await Promise.all([
         api.get('/enrollments/my'),

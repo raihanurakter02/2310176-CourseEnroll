@@ -21,20 +21,38 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const cached = localStorage.getItem('cached_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    const hasToken = !!localStorage.getItem('access_token');
+    const hasUser = !!localStorage.getItem('cached_user');
+    return hasToken && !hasUser;
+  });
 
   useEffect(() => {
-    if (token && !user) {
-      // Explicitly attaching the token guarantees it bypasses any interceptor bugs
+    if (token) {
+      // Validate session in background or restore user data
       api.get('/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(response => setUser(response.data))
+        .then(response => {
+          setUser(response.data);
+          try {
+            localStorage.setItem('cached_user', JSON.stringify(response.data));
+          } catch {
+            // ignore
+          }
+        })
         .catch(() => logout())
         .finally(() => setLoading(false));
-    } else if (!token) {
+    } else {
       setLoading(false);
     }
 
@@ -47,14 +65,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     window.addEventListener('auth:logout', handleSecurityLogout);
     return () => window.removeEventListener('auth:logout', handleSecurityLogout);
-  }, [token, user]);
+  }, [token]);
 
   const login = (newToken: string, userData: User) => {
     sessionStorage.removeItem('manual_logout');
     sessionStorage.removeItem('logout_reason');
     localStorage.setItem('access_token', newToken);
+    try {
+      localStorage.setItem('cached_user', JSON.stringify(userData));
+    } catch {
+      // ignore
+    }
     setToken(newToken);
     setUser(userData);
+    setLoading(false);
   };
 
   const logout = async () => {
@@ -68,6 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Ignore background errors on logout
     } finally {
       localStorage.removeItem('access_token');
+      localStorage.removeItem('cached_user');
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);

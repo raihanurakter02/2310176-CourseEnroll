@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import api from '../api';
+import api, { getCachedData } from '../api';
 import Modal from '../components/Modal';
 import { ToastContext } from '../ToastContext';
 
@@ -18,7 +18,7 @@ interface Course {
 interface ClassSession { id: number; date: string; topic: string | null; }
 
 const AdminCourses: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(() => getCachedData<Course[]>('/courses') || []);
   const [isActionLoading, setIsActionLoading] = useState(false);
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
