@@ -12,6 +12,15 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
 if not SQLALCHEMY_DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set.")
 
+connect_args = {}
+# Supabase PgBouncer transaction pooler does not support prepared statements
+if "postgresql" in SQLALCHEMY_DATABASE_URL:
+    try:
+        import psycopg  # noqa: F401
+        connect_args["prepare_threshold"] = None
+    except ImportError:
+        pass
+
 # pool_pre_ping tests connections for liveness before executing queries
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -19,7 +28,7 @@ engine = create_engine(
     max_overflow=10,
     pool_pre_ping=True,
     pool_recycle=1800,
-    connect_args={"prepare_threshold": None}
+    connect_args=connect_args
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
