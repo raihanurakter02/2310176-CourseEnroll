@@ -31,6 +31,10 @@ const AdminAssignments: React.FC = () => {
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | ''>('');
   const [isEditing, setIsEditing] = useState(false);
 
+  // Delete confirmation state
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+
   const toast = useContext(ToastContext);
 
   const fetchData = async () => {
@@ -88,6 +92,27 @@ const AdminAssignments: React.FC = () => {
     }
   };
 
+  const handleOpenDelete = (course: Course) => {
+    setCourseToDelete(course);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!courseToDelete) return;
+    setIsActionLoading(true);
+    try {
+      await api.delete(`/courses/${courseToDelete.id}/faculty`);
+      toast?.showToast('Faculty assignment removed successfully', 'success');
+      setIsConfirmDeleteOpen(false);
+      setCourseToDelete(null);
+      fetchData();
+    } catch (err: any) {
+      toast?.showToast(err.response?.data?.detail || 'Failed to remove assignment', 'error');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -105,7 +130,7 @@ const AdminAssignments: React.FC = () => {
         </button>
       </div>
 
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="table-scroll" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -138,6 +163,13 @@ const AdminAssignments: React.FC = () => {
                         onClick={() => handleOpenEdit(course)}
                       >
                         Edit Assignment
+                      </button>
+                      <button 
+                        className="btn-outline"
+                        style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', marginLeft: '0.5rem', color: '#ef4444', borderColor: '#ef4444' }}
+                        onClick={() => handleOpenDelete(course)}
+                      >
+                        Remove
                       </button>
                     </td>
                   </tr>
@@ -190,6 +222,29 @@ const AdminAssignments: React.FC = () => {
             {isActionLoading ? 'Saving...' : 'Confirm Assignment'}
           </button>
         </form>
+      </Modal>
+      <Modal isOpen={isConfirmDeleteOpen} onClose={() => setIsConfirmDeleteOpen(false)} title="Remove Faculty Assignment">
+        <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
+          Are you sure you want to remove the faculty assignment for <strong>{courseToDelete?.course_code} - {courseToDelete?.course_name}</strong>? This will unassign the instructor from this course.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <button
+            className="btn-outline"
+            style={{ width: 'auto' }}
+            onClick={() => setIsConfirmDeleteOpen(false)}
+            disabled={isActionLoading}
+          >
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            style={{ width: 'auto', background: '#ef4444', borderColor: '#ef4444' }}
+            onClick={handleConfirmDelete}
+            disabled={isActionLoading}
+          >
+            {isActionLoading ? 'Removing...' : 'Yes, Remove'}
+          </button>
+        </div>
       </Modal>
     </div>
   );

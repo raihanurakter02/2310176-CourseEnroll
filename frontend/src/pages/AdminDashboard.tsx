@@ -62,6 +62,24 @@ const AdminDashboard: React.FC = () => {
             <button className="btn-primary" style={{ background: '#d97706' }}>Manage Assignments →</button>
           </Link>
         </div>
+
+        <div className="course-card" style={{ background: 'linear-gradient(135deg, #fee2e2 0%, #ffffff 100%)' }}>
+          <span className="course-code" style={{ background: '#fee2e2', color: '#dc2626' }}>Security & Audit</span>
+          <h3 className="course-title">Security Center</h3>
+          <p className="course-desc">Track active devices, audit login events, ban malicious users, and control system sessions.</p>
+          <Link to="/admin/security" style={{ textDecoration: 'none', marginTop: 'auto' }}>
+            <button className="btn-primary" style={{ background: '#dc2626' }}>Open Security Center →</button>
+          </Link>
+        </div>
+
+        <div className="course-card" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' }}>
+          <span className="course-code" style={{ background: '#d1fae5', color: '#065f46' }}>Communications</span>
+          <h3 className="course-title">Announcements & Alerts</h3>
+          <p className="course-desc">Broadcast emergency notices, registration deadlines, and messages directly to student and faculty inboxes.</p>
+          <Link to="/admin/announcements" style={{ textDecoration: 'none', marginTop: 'auto' }}>
+            <button className="btn-primary" style={{ background: '#059669' }}>Manage Notices →</button>
+          </Link>
+        </div>
       </div>
     </div>
   );
