@@ -1,8 +1,9 @@
+import asyncio
 import datetime
-from typing import Any
+from typing import Any, Optional
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import text
@@ -11,6 +12,28 @@ from sqlalchemy.orm import Session
 
 from backend import auth, models, schemas
 from backend.database import engine, get_db
+
+class NotificationManager:
+    """Manages real-time WebSocket connections for instant notification delivery."""
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                self.disconnect(connection)
+
+realtime_notifier = NotificationManager()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -22,6 +45,7 @@ with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
         conn.execute(text("ALTER TYPE enrollmentstatus ADD VALUE IF NOT EXISTS 'approved';"))
         conn.execute(text("ALTER TYPE enrollmentstatus ADD VALUE IF NOT EXISTS 'rejected';"))
         conn.execute(text("ALTER TYPE enrollmentstatus ADD VALUE IF NOT EXISTS 'dropped';"))
+        conn.execute(text("ALTER TYPE enrollmentstatus ADD VALUE IF NOT EXISTS 'waitlisted';"))
     except SQLAlchemyError:
         pass
 
@@ -29,6 +53,10 @@ with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
 with engine.connect() as conn:
     try:
         conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS semester_id INTEGER REFERENCES semesters(id);"))
+        conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS schedule_days VARCHAR DEFAULT 'Mon,Wed';"))
+        conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS start_time VARCHAR DEFAULT '10:00';"))
+        conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS end_time VARCHAR DEFAULT '11:30';"))
+        conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS room VARCHAR DEFAULT 'Hall 101';"))
         conn.execute(text("ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS grade VARCHAR;"))
         # Force add the new grading period columns that are missing
         conn.execute(text("ALTER TABLE semesters ADD COLUMN IF NOT EXISTS grading_start_date TIMESTAMP;"))
@@ -40,6 +68,14 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE semesters ALTER COLUMN start_date TYPE TIMESTAMP USING start_date::timestamp;"))
         conn.execute(text("ALTER TABLE semesters ALTER COLUMN end_date TYPE TIMESTAMP USING end_date::timestamp;"))
         conn.execute(text("ALTER TABLE semesters ALTER COLUMN add_drop_deadline TYPE TIMESTAMP USING add_drop_deadline::timestamp;"))
+
+        # Security columns on users table
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason VARCHAR;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts INTEGER DEFAULT 0;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0;"))
+
         conn.commit()
     except SQLAlchemyError:
         conn.rollback()
@@ -60,6 +96,24 @@ app.add_middleware(
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+@app.websocket("/ws/notifications")
+async def websocket_notifications(websocket: WebSocket):
+    """Real-time instant notification broadcast channel for announcements & enrollments."""
+    await realtime_notifier.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        realtime_notifier.disconnect(websocket)
+    except Exception:
+        realtime_notifier.disconnect(websocket)
+
+
+# ---------------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------------
 
 def is_past_deadline(deadline: Any) -> tuple[bool, str]:
     if not deadline:
@@ -76,25 +130,193 @@ def is_past_deadline(deadline: Any) -> tuple[bool, str]:
     return now > clean_deadline, clean_deadline.strftime("%Y-%m-%d %H:%M")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):  # noqa: B008
+def parse_device_hint(user_agent: str) -> str:
+    ua = user_agent.lower()
+    browser = "Unknown Browser"
+    os_name = "Unknown OS"
+    for b in ["chrome", "firefox", "safari", "edge", "opera"]:
+        if b in ua:
+            browser = b.capitalize()
+            break
+    for o in [("windows", "Windows"), ("mac", "macOS"), ("linux", "Linux"), ("android", "Android"), ("iphone", "iPhone")]:
+        if o[0] in ua:
+            os_name = o[1]
+            break
+    return f"{browser} on {os_name}"
+
+
+def log_security_event(
+    db: Session,
+    event_type: str,
+    severity: str = "info",
+    user_id: Optional[int] = None,
+    user_email: Optional[str] = None,
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    detail: Optional[str] = None,
+):
+    """Helper: write a row to security_events and flush immediately."""
+    event = models.SecurityEvent(
+        event_type=event_type,
+        severity=severity,
+        user_id=user_id,
+        user_email=user_email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        detail=detail,
+    )
+    db.add(event)
+    db.flush()  # flush but don't commit — caller owns the transaction
+
+
+# ---------------------------------------------------------------------------
+# AUTH / GET CURRENT USER
+# ---------------------------------------------------------------------------
+
+def get_current_user(
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):  # noqa: B008
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "Unknown")
+
+    # --- Decode token ---
     try:
         payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
-        email = payload.get("sub")
-        if email is None:
+        email: Optional[str] = payload.get("sub")
+        jti: Optional[str] = payload.get("jti")
+        tv: Optional[int] = payload.get("tv")
+        if email is None or jti is None:
             raise credentials_exception
-    except jwt.PyJWTError:
-        raise credentials_exception
+    except jwt.ExpiredSignatureError:
+        # Standard routine token expiration
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.PyJWTError as exc:
+        # Malformed or forged token: log audit event for investigation and reject caller
+        try:
+            ten_mins_ago = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
+            tamper_count = (
+                db.query(models.SecurityEvent)
+                .filter(
+                    models.SecurityEvent.ip_address == ip,
+                    models.SecurityEvent.event_type.in_(["token_malformed", "token_tampered"]),
+                    models.SecurityEvent.created_at >= ten_mins_ago,
+                )
+                .count()
+            )
+            severity = "critical" if tamper_count >= 2 else "high"
+            log_security_event(
+                db,
+                event_type="token_tampered",
+                severity=severity,
+                ip_address=ip,
+                user_agent=ua,
+                detail=f"Malformed or tampered JWT detected (attempt #{tamper_count + 1}): {exc}",
+            )
+            if tamper_count >= 2:
+                log_security_event(
+                    db,
+                    event_type="suspicious_activity",
+                    severity="critical",
+                    ip_address=ip,
+                    user_agent=ua,
+                    detail=f"Automated or brute-force token tampering detected from IP {ip}",
+                )
+            db.commit()
+        except Exception:
+            db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token: signature verification failed",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
+    # --- Fetch user ---
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
+
+    # --- Check token_blacklist ---
+    blacklisted = (
+        db.query(models.TokenBlacklist)
+        .filter(models.TokenBlacklist.jti == jti)
+        .first()
+    )
+    if blacklisted:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # --- Check token_version (force-logout-all) ---
+    user_tv = user.token_version if user.token_version is not None else 0
+    if tv is not None and tv < user_tv:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session revoked (global logout)",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # --- Check ban ---
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Account suspended: {user.ban_reason or 'Contact administrator'}",
+        )
+
+    # --- Check lockout ---
+    if user.locked_until and user.locked_until > datetime.datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account temporarily locked",
+        )
+
+    # --- Check and update active session / detect session hijacking ---
+    session_row = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.jti == jti)
+        .first()
+    )
+    if session_row:
+        if not session_row.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        # Detect IP mismatch / token hijacking
+        if session_row.ip_address and ip and session_row.ip_address != ip:
+            log_security_event(
+                db,
+                event_type="suspicious_activity",
+                severity="warning",
+                user_id=user.id,
+                user_email=user.email,
+                ip_address=ip,
+                user_agent=ua,
+                detail=f"IP mismatch detected (Origin: {session_row.ip_address}, Current: {ip})",
+            )
+        session_row.last_seen = datetime.datetime.utcnow()
+        db.commit()
+
     return user
 
+
+# ---------------------------------------------------------------------------
+# REGISTER & LOGIN
+# ---------------------------------------------------------------------------
 
 @app.post("/auth/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):  # noqa: B008
@@ -116,24 +338,99 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):  # n
 
 
 @app.post("/auth/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):  # noqa: B008
+def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):  # noqa: B008
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "Unknown")
+
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
+
+    # --- Check ban first ---
+    if user and user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended by administrator",
+        )
+
+    # --- Check lockout ---
+    if user and user.locked_until and user.locked_until > datetime.datetime.utcnow():
+        unlock_str = user.locked_until.strftime("%Y-%m-%d %H:%M UTC")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Account temporarily locked. Try again after {unlock_str}.",
+        )
+
+    # --- Verify password ---
     if not user or not auth.verify_password(form_data.password, user.password_hash):
+        if user:
+            # Increment failed attempts
+            attempts = (user.login_attempts or 0) + 1
+            user.login_attempts = attempts
+            if attempts >= 5:
+                user.locked_until = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+            log_security_event(
+                db,
+                event_type="login_failed",
+                severity="warning",
+                user_id=user.id,
+                user_email=user.email,
+                ip_address=ip,
+                user_agent=ua,
+                detail=f"Failed attempt #{attempts}",
+            )
+            db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # --- Success ---
+    user.login_attempts = 0
+    user.locked_until = None
+
     role_val = user.role.value if hasattr(user.role, "value") else user.role
+    token_version = user.token_version if user.token_version is not None else 0
+
     access_token = auth.create_access_token(
         data={
             "sub": user.email,
             "role": role_val,
             "name": user.name,
             "id": user.id,
+            "tv": token_version,
         }
     )
+
+    # Extract jti from the freshly created token
+    decoded = jwt.decode(access_token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+    jti = decoded["jti"]
+
+    device_hint = parse_device_hint(ua)
+    new_session = models.UserSession(
+        user_id=user.id,
+        jti=jti,
+        ip_address=ip,
+        user_agent=ua,
+        device_hint=device_hint,
+    )
+    db.add(new_session)
+
+    log_security_event(
+        db,
+        event_type="login_success",
+        severity="info",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=ip,
+        user_agent=ua,
+        detail=f"Device: {device_hint}",
+    )
+    db.commit()
+
     return {"access_token": access_token, "token_type": "bearer", "role": role_val}
 
 
@@ -142,7 +439,47 @@ def read_users_me(current_user: models.User = Depends(get_current_user)):  # noq
     return current_user
 
 
-# --- RBAC DEPENDENCY ---
+@app.post("/auth/logout")
+def logout_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Graceful logout: blacklists token jti and marks active session as inactive."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "").strip()
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "Unknown")
+
+    if token:
+        try:
+            payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+            jti = payload.get("jti")
+            if jti:
+                existing = db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == jti).first()
+                if not existing:
+                    db.add(models.TokenBlacklist(jti=jti, user_id=current_user.id, reason="user_logout"))
+                db.query(models.UserSession).filter(models.UserSession.jti == jti).update({"is_active": False})
+                log_security_event(
+                    db,
+                    event_type="user_logout",
+                    severity="info",
+                    user_id=current_user.id,
+                    user_email=current_user.email,
+                    ip_address=ip,
+                    user_agent=ua,
+                    detail=f"User {current_user.email} signed out cleanly",
+                )
+                db.commit()
+        except Exception:
+            db.rollback()
+
+    return {"message": "Logged out successfully"}
+
+
+# ---------------------------------------------------------------------------
+# RBAC DEPENDENCY
+# ---------------------------------------------------------------------------
 class RoleChecker:
     def __init__(self, allowed_roles: list[models.UserRole]):
         self.allowed_roles = allowed_roles
@@ -162,7 +499,9 @@ allow_faculty_only = RoleChecker([models.UserRole.faculty])
 allow_student_only = RoleChecker([models.UserRole.student])
 
 
-# --- SEMESTER ENDPOINTS ---
+# ---------------------------------------------------------------------------
+# SEMESTER ENDPOINTS
+# ---------------------------------------------------------------------------
 @app.get("/semesters", response_model=list[schemas.SemesterResponse])
 def get_semesters(db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
     return db.query(models.Semester).all()
@@ -224,10 +563,41 @@ def activate_semester(semester_id: int, db: Session = Depends(get_db), current_u
     return target_semester
 
 
-# --- COURSE & SCHEDULE ENDPOINTS ---
+# ---------------------------------------------------------------------------
+# COURSE & SCHEDULE ENDPOINTS
+# ---------------------------------------------------------------------------
 @app.get("/courses", response_model=list[schemas.CourseResponse])
 def get_courses(db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
-    return db.query(models.Course).all()
+    courses = db.query(models.Course).all()
+    results = []
+    for c in courses:
+        enrolled_c = db.query(models.Enrollment).filter(
+            models.Enrollment.course_id == c.id,
+            models.Enrollment.status == models.EnrollmentStatus.approved,
+        ).count()
+        waitlisted_c = db.query(models.Enrollment).filter(
+            models.Enrollment.course_id == c.id,
+            models.Enrollment.status == models.EnrollmentStatus.waitlisted,
+        ).count()
+        results.append(
+            schemas.CourseResponse(
+                id=c.id,
+                course_code=c.course_code,
+                course_name=c.course_name,
+                description=c.description,
+                credit=c.credit,
+                capacity=c.capacity,
+                schedule_days=c.schedule_days or "Mon,Wed",
+                start_time=c.start_time or "10:00",
+                end_time=c.end_time or "11:30",
+                room=c.room or "Hall 101",
+                faculty_id=c.faculty_id,
+                semester_id=c.semester_id,
+                enrolled_count=enrolled_c,
+                waitlist_count=waitlisted_c,
+            )
+        )
+    return results
 
 
 @app.get("/courses/{course_id}", response_model=schemas.CourseResponse)
@@ -235,7 +605,30 @@ def get_course(course_id: int, db: Session = Depends(get_db), current_user: mode
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    return course
+    enrolled_c = db.query(models.Enrollment).filter(
+        models.Enrollment.course_id == course.id,
+        models.Enrollment.status == models.EnrollmentStatus.approved,
+    ).count()
+    waitlisted_c = db.query(models.Enrollment).filter(
+        models.Enrollment.course_id == course.id,
+        models.Enrollment.status == models.EnrollmentStatus.waitlisted,
+    ).count()
+    return schemas.CourseResponse(
+        id=course.id,
+        course_code=course.course_code,
+        course_name=course.course_name,
+        description=course.description,
+        credit=course.credit,
+        capacity=course.capacity,
+        schedule_days=course.schedule_days or "Mon,Wed",
+        start_time=course.start_time or "10:00",
+        end_time=course.end_time or "11:30",
+        room=course.room or "Hall 101",
+        faculty_id=course.faculty_id,
+        semester_id=course.semester_id,
+        enrolled_count=enrolled_c,
+        waitlist_count=waitlisted_c,
+    )
 
 
 @app.post("/courses", response_model=schemas.CourseResponse, status_code=status.HTTP_201_CREATED)
@@ -286,6 +679,17 @@ def assign_faculty(course_id: int, faculty_id: int, db: Session = Depends(get_db
     db.commit()
     return {"message": "Faculty assigned successfully"}
 
+@app.delete("/courses/{course_id}/faculty", status_code=status.HTTP_204_NO_CONTENT)
+def remove_faculty_assignment(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Remove the assigned faculty member
+    setattr(course, "faculty_id", None)
+    db.commit()
+    return
+
 
 @app.get("/courses/{course_id}/sessions", response_model=list[schemas.ClassSessionResponse])
 def get_course_sessions(course_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(allow_all_roles)):  # noqa: B008
@@ -310,7 +714,9 @@ def delete_course_session(session_id: int, db: Session = Depends(get_db), curren
     db.commit()
 
 
-# --- STUDENT ENROLLMENT ENDPOINTS ---
+# ---------------------------------------------------------------------------
+# STUDENT ENROLLMENT ENDPOINTS
+# ---------------------------------------------------------------------------
 @app.post("/enrollments", response_model=schemas.EnrollmentResponse, status_code=status.HTTP_201_CREATED)
 def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_student_only)):  # noqa: B008
     active_sem = db.query(models.Semester).filter(models.Semester.is_active == True).first()
@@ -336,13 +742,15 @@ def enroll_in_course(enrollment: schemas.EnrollmentCreate, db: Session = Depends
         models.Enrollment.course_id == enrollment.course_id,
         models.Enrollment.status == models.EnrollmentStatus.approved,
     ).count()
-    if approved_enrollments >= course.capacity:
-        raise HTTPException(status_code=400, detail="Course is at full capacity.")
+
+    # If course is full, place student on the automatic Waitlist queue
+    is_at_capacity = approved_enrollments >= course.capacity
+    initial_status = "waitlisted" if is_at_capacity else "pending"
 
     new_enrollment = models.Enrollment(
         student_id=current_user.id,
         course_id=enrollment.course_id,
-        status="pending",
+        status=initial_status,
     )
     db.add(new_enrollment)
     db.commit()
@@ -373,11 +781,36 @@ def drop_course(enrollment_id: int, db: Session = Depends(get_db), current_user:
     if not enrollment:
         raise HTTPException(status_code=404, detail="Enrollment not found")
 
+    course_id = enrollment.course_id
+    was_approved = enrollment.status == models.EnrollmentStatus.approved
+
     db.delete(enrollment)
     db.commit()
 
+    # Automatic Waitlist Promotion: promote earliest waitlisted student when a seat opens up
+    if was_approved:
+        next_waitlisted = (
+            db.query(models.Enrollment)
+            .filter(
+                models.Enrollment.course_id == course_id,
+                models.Enrollment.status == models.EnrollmentStatus.waitlisted,
+            )
+            .order_by(models.Enrollment.enrolled_at.asc())
+            .first()
+        )
+        if next_waitlisted:
+            next_waitlisted.status = models.EnrollmentStatus.approved
+            db.commit()
+            asyncio.create_task(realtime_notifier.broadcast({
+                "type": "waitlist_promoted",
+                "student_id": next_waitlisted.student_id,
+                "course_id": course_id,
+            }))
 
-# --- FACULTY ENDPOINTS ---
+
+# ---------------------------------------------------------------------------
+# FACULTY ENDPOINTS
+# ---------------------------------------------------------------------------
 @app.get("/faculty/courses", response_model=list[schemas.CourseResponse])
 def get_assigned_courses(db: Session = Depends(get_db), current_user: models.User = Depends(allow_faculty_only)):  # noqa: B008
     return db.query(models.Course).filter(models.Course.faculty_id == current_user.id).all()
@@ -467,7 +900,9 @@ def get_course_attendance_history(course_id: int, db: Session = Depends(get_db),
     ).all()
 
 
-# --- ADMIN ENDPOINTS (USERS & ENROLLMENT APPROVALS) ---
+# ---------------------------------------------------------------------------
+# ADMIN ENDPOINTS (USERS & ENROLLMENT APPROVALS)
+# ---------------------------------------------------------------------------
 @app.get("/users", response_model=list[schemas.UserResponse])
 def get_all_users(db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
     return db.query(models.User).all()
@@ -493,8 +928,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: model
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.id == current_user.id:
-        raise HTTPException(status_code=400, detail="You cannot delete your own admin account")
+    if user.role == models.UserRole.admin:
+        raise HTTPException(status_code=400, detail="Administrator accounts cannot be removed")
 
     db.query(models.Enrollment).filter(models.Enrollment.student_id == user_id).delete()
     db.query(models.Course).filter(models.Course.faculty_id == user_id).update({"faculty_id": None})
@@ -525,4 +960,466 @@ def update_enrollment_status(enrollment_id: int, status_update: schemas.Enrollme
     setattr(enrollment, "status", status_update.status)
     db.commit()
     db.refresh(enrollment)
+
+    course = db.query(models.Course).filter(models.Course.id == enrollment.course_id).first()
+    status_str = status_update.status.value if hasattr(status_update.status, "value") else str(status_update.status)
+    try:
+        asyncio.create_task(realtime_notifier.broadcast({
+            "type": "enrollment_update",
+            "student_id": enrollment.student_id,
+            "course_id": enrollment.course_id,
+            "course_title": course.course_name if course else "Course",
+            "course_code": course.course_code if course else "",
+            "status": status_str,
+        }))
+    except Exception:
+        pass
+
     return enrollment
+
+
+# ---------------------------------------------------------------------------
+# ADMIN SECURITY ENDPOINTS
+# ---------------------------------------------------------------------------
+
+@app.get("/admin/security/events", response_model=list[schemas.SecurityEventResponse])
+def list_security_events(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """List security audit log events, paginated."""
+    return (
+        db.query(models.SecurityEvent)
+        .order_by(models.SecurityEvent.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+
+@app.get("/admin/security/sessions", response_model=list[schemas.UserSessionResponse])
+def list_user_sessions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """List all user sessions with joined user info."""
+    rows = (
+        db.query(models.UserSession, models.User)
+        .join(models.User, models.User.id == models.UserSession.user_id)
+        .order_by(models.UserSession.last_seen.desc())
+        .all()
+    )
+    result = []
+    for sess, user in rows:
+        result.append(
+            schemas.UserSessionResponse(
+                id=sess.id,
+                user_id=sess.user_id,
+                jti=sess.jti,
+                ip_address=sess.ip_address,
+                user_agent=sess.user_agent,
+                device_hint=sess.device_hint,
+                created_at=sess.created_at,
+                last_seen=sess.last_seen,
+                is_active=sess.is_active,
+                user_name=user.name,
+                user_email=user.email,
+            )
+        )
+    return result
+
+
+@app.delete("/admin/security/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_session(
+    session_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Revoke a specific user session (adds to blacklist, marks inactive)."""
+    sess = db.query(models.UserSession).filter(models.UserSession.id == session_id).first()
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Blacklist the jti
+    existing_bl = db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == sess.jti).first()
+    if not existing_bl:
+        db.add(models.TokenBlacklist(jti=sess.jti, user_id=sess.user_id, reason="admin_revoke"))
+
+    sess.is_active = False
+
+    log_security_event(
+        db,
+        event_type="session_revoked",
+        severity="warning",
+        user_id=sess.user_id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Session {session_id} revoked by admin {current_user.email}",
+    )
+    db.commit()
+
+
+@app.post("/admin/security/users/{user_id}/ban")
+def ban_user(
+    user_id: int,
+    ban_data: schemas.BanRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Ban a user: set is_banned, revoke all active sessions, log event."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == models.UserRole.admin:
+        raise HTTPException(status_code=400, detail="Administrator accounts cannot be banned")
+
+    user.is_banned = True
+    user.ban_reason = ban_data.ban_reason
+
+    # Revoke all active sessions for this user
+    active_sessions = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.user_id == user_id, models.UserSession.is_active == True)
+        .all()
+    )
+    for sess in active_sessions:
+        existing_bl = db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == sess.jti).first()
+        if not existing_bl:
+            db.add(models.TokenBlacklist(jti=sess.jti, user_id=user_id, reason="user_banned"))
+        sess.is_active = False
+
+    log_security_event(
+        db,
+        event_type="user_banned",
+        severity="critical",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Banned by {current_user.email}. Reason: {ban_data.ban_reason}",
+    )
+    db.commit()
+    return {"message": f"User {user.email} has been banned"}
+
+
+@app.post("/admin/security/users/{user_id}/unban")
+def unban_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Unban a user."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_banned = False
+    user.ban_reason = None
+
+    log_security_event(
+        db,
+        event_type="user_unbanned",
+        severity="info",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Unbanned by {current_user.email}",
+    )
+    db.commit()
+    return {"message": f"User {user.email} has been unbanned"}
+
+
+@app.post("/admin/security/force-logout-all")
+def force_logout_all(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """
+    Revoke ALL active sessions system-wide by incrementing every user's
+    token_version. Any existing token with an outdated `tv` claim is rejected
+    in get_current_user.
+    """
+    db.query(models.User).update({"token_version": models.User.token_version + 1})
+
+    # Also mark all active sessions inactive
+    db.query(models.UserSession).filter(models.UserSession.is_active == True).update({"is_active": False})
+
+    log_security_event(
+        db,
+        event_type="force_logout_all",
+        severity="critical",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Global force-logout triggered by {current_user.email}",
+    )
+    db.commit()
+    return {"message": "All sessions have been invalidated"}
+
+
+@app.get("/admin/security/stats", response_model=schemas.SecurityStatsResponse)
+def security_stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Return aggregate security statistics."""
+    now = datetime.datetime.utcnow()
+    since_24h = now - datetime.timedelta(hours=24)
+
+    total_events = db.query(models.SecurityEvent).count()
+    critical_events_24h = (
+        db.query(models.SecurityEvent)
+        .filter(
+            models.SecurityEvent.severity == "critical",
+            models.SecurityEvent.created_at >= since_24h,
+        )
+        .count()
+    )
+    active_sessions = (
+        db.query(models.UserSession).filter(models.UserSession.is_active == True).count()
+    )
+    banned_users = db.query(models.User).filter(models.User.is_banned == True).count()
+    failed_logins_24h = (
+        db.query(models.SecurityEvent)
+        .filter(
+            models.SecurityEvent.event_type == "login_failed",
+            models.SecurityEvent.created_at >= since_24h,
+        )
+        .count()
+    )
+
+    return schemas.SecurityStatsResponse(
+        total_events=total_events,
+        critical_events_24h=critical_events_24h,
+        active_sessions=active_sessions,
+        banned_users=banned_users,
+        failed_logins_24h=failed_logins_24h,
+    )
+
+
+# ---------------------------------------------------------------------------
+# ANNOUNCEMENTS & INBOX ENDPOINTS
+# ---------------------------------------------------------------------------
+
+@app.get("/announcements", response_model=list[schemas.AnnouncementResponse])
+def get_announcements(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_all_roles),
+):
+    """Retrieve announcements tailored to the current user's role with read status."""
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    
+    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
+    if role_str != "admin":
+        query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
+        
+    announcements = query.order_by(models.Announcement.created_at.desc()).all()
+    
+    # Get all read announcement IDs for this user
+    read_ids = {
+        r.announcement_id
+        for r in db.query(models.AnnouncementRead)
+        .filter(models.AnnouncementRead.user_id == current_user.id)
+        .all()
+    }
+    
+    result = []
+    for a in announcements:
+        author_name = a.author.name if a.author else "Administrator"
+        result.append(
+            schemas.AnnouncementResponse(
+                id=a.id,
+                title=a.title,
+                content=a.content,
+                target_role=a.target_role,
+                priority=a.priority,
+                created_by=a.created_by,
+                author_name=author_name,
+                created_at=a.created_at,
+                is_active=a.is_active,
+                is_read=(a.id in read_ids),
+            )
+        )
+    return result
+
+
+@app.get("/announcements/unread-count", response_model=schemas.UnreadCountResponse)
+def get_unread_count(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_all_roles),
+):
+    """Return count of unread announcements for current user."""
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    
+    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
+    if role_str != "admin":
+        query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
+        
+    all_announcements = query.all()
+    read_ids = {
+        r.announcement_id
+        for r in db.query(models.AnnouncementRead)
+        .filter(models.AnnouncementRead.user_id == current_user.id)
+        .all()
+    }
+    unread = sum(1 for a in all_announcements if a.id not in read_ids)
+    return schemas.UnreadCountResponse(unread_count=unread)
+
+
+@app.post("/announcements", response_model=schemas.AnnouncementResponse, status_code=status.HTTP_201_CREATED)
+def create_announcement(
+    announcement_data: schemas.AnnouncementCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Admin creates a new announcement."""
+    new_announcement = models.Announcement(
+        title=announcement_data.title,
+        content=announcement_data.content,
+        target_role=announcement_data.target_role,
+        priority=announcement_data.priority,
+        created_by=current_user.id,
+    )
+    db.add(new_announcement)
+    db.commit()
+    db.refresh(new_announcement)
+    
+    log_security_event(
+        db,
+        event_type="announcement_broadcast",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Broadcast '{new_announcement.title}' to {new_announcement.target_role}",
+    )
+    db.commit()
+
+    try:
+        asyncio.create_task(realtime_notifier.broadcast({
+            "type": "new_announcement",
+            "id": new_announcement.id,
+            "title": new_announcement.title,
+            "content": new_announcement.content,
+            "target_role": new_announcement.target_role,
+            "priority": new_announcement.priority,
+            "author_name": current_user.name,
+            "created_at": new_announcement.created_at.isoformat() if new_announcement.created_at else "",
+        }))
+    except Exception:
+        pass
+    
+    return schemas.AnnouncementResponse(
+        id=new_announcement.id,
+        title=new_announcement.title,
+        content=new_announcement.content,
+        target_role=new_announcement.target_role,
+        priority=new_announcement.priority,
+        created_by=new_announcement.created_by,
+        author_name=current_user.name,
+        created_at=new_announcement.created_at,
+        is_active=new_announcement.is_active,
+        is_read=True,
+    )
+
+
+@app.put("/announcements/{announcement_id}", response_model=schemas.AnnouncementResponse)
+def update_announcement(
+    announcement_id: int,
+    data: schemas.AnnouncementUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Admin updates an announcement."""
+    announcement = db.query(models.Announcement).filter(models.Announcement.id == announcement_id).first()
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+        
+    for key, value in data.dict(exclude_unset=True).items():
+        setattr(announcement, key, value)
+        
+    db.commit()
+    db.refresh(announcement)
+    return schemas.AnnouncementResponse(
+        id=announcement.id,
+        title=announcement.title,
+        content=announcement.content,
+        target_role=announcement.target_role,
+        priority=announcement.priority,
+        created_by=announcement.created_by,
+        author_name=announcement.author.name if announcement.author else "Administrator",
+        created_at=announcement.created_at,
+        is_active=announcement.is_active,
+        is_read=True,
+    )
+
+
+@app.delete("/announcements/{announcement_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_announcement(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Admin deletes an announcement."""
+    announcement = db.query(models.Announcement).filter(models.Announcement.id == announcement_id).first()
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    db.delete(announcement)
+    db.commit()
+
+
+@app.post("/announcements/{announcement_id}/read")
+def mark_announcement_read(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_all_roles),
+):
+    """Mark an announcement as read for the current user."""
+    existing = (
+        db.query(models.AnnouncementRead)
+        .filter(
+            models.AnnouncementRead.announcement_id == announcement_id,
+            models.AnnouncementRead.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not existing:
+        db.add(models.AnnouncementRead(announcement_id=announcement_id, user_id=current_user.id))
+        db.commit()
+    return {"message": "Marked as read"}
+
+
+@app.post("/announcements/mark-all-read")
+def mark_all_announcements_read(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_all_roles),
+):
+    """Mark all eligible announcements as read for the current user."""
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    query = db.query(models.Announcement).filter(models.Announcement.is_active == True)
+    if role_str != "admin":
+        query = query.filter(models.Announcement.target_role.in_(["all", role_str]))
+    eligible = query.all()
+    
+    read_ids = {
+        r.announcement_id
+        for r in db.query(models.AnnouncementRead)
+        .filter(models.AnnouncementRead.user_id == current_user.id)
+        .all()
+    }
+    
+    for a in eligible:
+        if a.id not in read_ids:
+            db.add(models.AnnouncementRead(announcement_id=a.id, user_id=current_user.id))
+    db.commit()
+    return {"message": "All marked as read"}
