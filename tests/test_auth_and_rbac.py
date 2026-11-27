@@ -97,3 +97,80 @@ def test_rbac_rule_4_safety_admin_cannot_ban_admin():
     res = client.post(f"/admin/security/users/{admin_id}/ban", json={"ban_reason": "Testing admin immunity"}, headers=headers)
     assert res.status_code == 400
     assert "Administrator accounts cannot be banned" in res.json().get("detail", "")
+
+
+def test_rbac_rule_5_admin_cannot_change_own_role():
+    """Safety Rule: An administrator cannot change their own role."""
+    login_res = client.post("/auth/login", data={"username": "admin@university.edu", "password": "password123"})
+    assert login_res.status_code == 200
+    admin_token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    me = client.get("/auth/me", headers=headers).json()
+
+    res = client.put(
+        f"/users/{me['id']}",
+        json={"name": me["name"], "email": me["email"], "role": "student"},
+        headers=headers,
+    )
+    assert res.status_code == 400
+    assert "cannot change their own role" in res.json().get("detail", "")
+
+
+def test_refresh_token_rotation_and_user_sessions():
+    """Login sets httpOnly refresh_token cookie, /auth/refresh rotates it, and /auth/sessions lists it."""
+    c = TestClient(app)
+    login_res = c.post("/auth/login", data={"username": "mila@gmail.com", "password": "password123"})
+    assert login_res.status_code == 200
+    assert "refresh_token" in c.cookies
+
+    refresh_res = c.post("/auth/refresh")
+    assert refresh_res.status_code == 200
+    new_token = refresh_res.json()["access_token"]
+    assert new_token
+
+    sess_res = c.get("/auth/sessions", headers={"Authorization": f"Bearer {new_token}"})
+    assert sess_res.status_code == 200
+    assert isinstance(sess_res.json(), list)
+    assert len(sess_res.json()) >= 1
+
+
+def test_study_group_fine_grained_permissions():
+    """Group owner can manage members; member permissions (create/edit/assign) and non-member 403 are enforced."""
+    mila_token = client.post("/auth/login", data={"username": "mila@gmail.com", "password": "password123"}).json()["access_token"]
+    rai_token = client.post("/auth/login", data={"username": "rai@gmail.com", "password": "password123"}).json()["access_token"]
+    alex_token = client.post("/auth/login", data={"username": "alex@gmail.com", "password": "password123"}).json()["access_token"]
+
+    mila_h = {"Authorization": f"Bearer {mila_token}"}
+    rai_h = {"Authorization": f"Bearer {rai_token}"}
+    alex_h = {"Authorization": f"Bearer {alex_token}"}
+
+    # Owner creates group
+    g_res = client.post("/groups", json={"name": "Pytest Group", "description": "Temp test group"}, headers=mila_h)
+    assert g_res.status_code == 201
+    gid = g_res.json()["id"]
+
+    try:
+        # Owner adds Rai with can_create=True, can_edit=False, can_assign=False
+        m_res = client.post(
+            f"/groups/{gid}/members",
+            json={"email": "rai@gmail.com", "can_create": True, "can_edit": False, "can_assign": False},
+            headers=mila_h,
+        )
+        assert m_res.status_code == 201
+
+        # Non-member Alex is blocked (403)
+        assert client.get(f"/groups/{gid}", headers=alex_h).status_code == 403
+
+        # Rai cannot rename group (owner only -> 403)
+        assert client.put(f"/groups/{gid}", json={"name": "Hijacked"}, headers=rai_h).status_code == 403
+
+        # Rai can create item
+        item_res = client.post(f"/groups/{gid}/items", json={"title": "Task 1"}, headers=rai_h)
+        assert item_res.status_code == 201
+        item_id = item_res.json()["id"]
+
+        # Rai cannot edit item (can_edit=False -> 403)
+        assert client.put(f"/groups/{gid}/items/{item_id}", json={"status": "done"}, headers=rai_h).status_code == 403
+    finally:
+        # Clean up
+        client.delete(f"/groups/{gid}", headers=mila_h)

@@ -24,6 +24,11 @@ const AdminUsers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'faculty' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [detailModalData, setDetailModalData] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -67,6 +72,91 @@ const AdminUsers: React.FC = () => {
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, searchQuery, roleFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const paginatedUsers = useMemo(() => {
+    const safePage = Math.min(currentPage, totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredUsers.slice(start, start + PAGE_SIZE);
+  }, [filteredUsers, currentPage, totalPages]);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkBan = async () => {
+    if (selectedIds.length === 0) return;
+    setIsActionLoading(true);
+    try {
+      const res = await api.post('/admin/security/users/bulk-ban', { user_ids: selectedIds, ban_reason: 'Bulk administrative suspension' });
+      toast?.showToast(res.data?.message || 'Bulk ban completed', 'success');
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (err: any) {
+      toast?.showToast(err.response?.data?.detail || 'Bulk ban failed', 'error');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleBulkUnban = async () => {
+    if (selectedIds.length === 0) return;
+    setIsActionLoading(true);
+    try {
+      const res = await api.post('/admin/security/users/bulk-unban', { user_ids: selectedIds });
+      toast?.showToast(res.data?.message || 'Bulk unban completed', 'success');
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (err: any) {
+      toast?.showToast(err.response?.data?.detail || 'Bulk unban failed', 'error');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleExportUsers = async () => {
+    try {
+      const res = await api.get('/admin/export/users', {
+        params: { role: roleFilter, status_filter: statusFilter, search: searchQuery },
+        responseType: 'blob',
+        skipCache: true,
+      } as any);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'users_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast?.showToast('Users CSV exported', 'success');
+    } catch {
+      toast?.showToast('Failed to export users CSV', 'error');
+    }
+  };
+
+  const openUserDetails = async (userId: number) => {
+    setDetailLoading(true);
+    setDetailModalData({ loading: true });
+    try {
+      const res = await api.get(`/admin/users/${userId}/details`, { skipCache: true } as any);
+      setDetailModalData(res.data);
+    } catch {
+      toast?.showToast('Failed to load user details', 'error');
+      setDetailModalData(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleRevokeAllUserSessions = async (userId: number) => {
+    try {
+      await api.post(`/admin/security/users/${userId}/revoke-sessions`);
+      toast?.showToast('All user sessions revoked', 'success');
+      openUserDetails(userId);
+    } catch {
+      toast?.showToast('Failed to revoke sessions', 'error');
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,9 +294,22 @@ const AdminUsers: React.FC = () => {
           )}
         </div>
 
-        <div className="premium-count-badge">
+        <div className="premium-count-badge" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span>Users:</span>
           <strong>{filteredUsers.length}</strong> of {users.length}
+          <button type="button" className="btn-outline" style={{ width: 'auto', padding: '0.3rem 0.7rem', fontSize: '0.8rem' }} onClick={handleExportUsers}>
+            📥 Export CSV
+          </button>
+          {selectedIds.length > 0 && (
+            <>
+              <button type="button" className="btn-outline" style={{ width: 'auto', padding: '0.3rem 0.7rem', fontSize: '0.8rem', color: '#dc2626', borderColor: '#fca5a5' }} onClick={handleBulkBan} disabled={isActionLoading}>
+                🚫 Bulk Ban ({selectedIds.length})
+              </button>
+              <button type="button" className="btn-outline" style={{ width: 'auto', padding: '0.3rem 0.7rem', fontSize: '0.8rem', color: '#059669', borderColor: '#a7f3d0' }} onClick={handleBulkUnban} disabled={isActionLoading}>
+                🔓 Bulk Unban ({selectedIds.length})
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -214,28 +317,34 @@ const AdminUsers: React.FC = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              <th style={{ padding: '1rem 1.5rem' }}>Name</th>
-              <th style={{ padding: '1rem 1.5rem' }}>Email</th>
-              <th style={{ padding: '1rem 1.5rem' }}>Role</th>
-              <th style={{ padding: '1rem 1.5rem' }}>Status</th>
-              <th style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>Actions</th>
+              <th style={{ padding: '1rem 0.75rem 1rem 1.25rem', width: '36px' }}>Select</th>
+              <th style={{ padding: '1rem 1.25rem' }}>Name</th>
+              <th style={{ padding: '1rem 1.25rem' }}>Email</th>
+              <th style={{ padding: '1rem 1.25rem' }}>Role</th>
+              <th style={{ padding: '1rem 1.25rem' }}>Status</th>
+              <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {isPageLoading ? (
-              <tr><td colSpan={5} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
-            ) : filteredUsers.length === 0 ? (
+              <tr><td colSpan={6} style={{ padding: '2rem' }}><SkeletonCard /></td></tr>
+            ) : paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔍</div>
                   <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>No users found</div>
                   <div style={{ fontSize: '0.875rem' }}>Try adjusting your search query or filters.</div>
                 </td>
               </tr>
             ) : (
-              filteredUsers.map(user => (
+              paginatedUsers.map(user => (
                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600 }}>{user.name}</td>
+                  <td style={{ padding: '1.25rem 0.75rem 1.25rem 1.25rem' }}>
+                    {user.role !== 'admin' && (
+                      <input type="checkbox" checked={selectedIds.includes(user.id)} onChange={() => toggleSelect(user.id)} />
+                    )}
+                  </td>
+                  <td style={{ padding: '1.25rem 1.25rem', fontWeight: 600 }}>{user.name}</td>
                   <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)' }}>{user.email}</td>
                   <td style={{ padding: '1.25rem 1.5rem' }}>
                     <span className={`badge ${user.role === 'admin' ? 'badge-danger' : user.role === 'faculty' ? 'badge-warning' : 'badge-primary'}`}>
@@ -271,6 +380,13 @@ const AdminUsers: React.FC = () => {
                   </td>
                   <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <button 
+                        className="btn-outline" 
+                        style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} 
+                        onClick={() => openUserDetails(user.id)}
+                      >
+                        Details
+                      </button>
                       <button 
                         className="btn-outline" 
                         style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} 
@@ -332,6 +448,63 @@ const AdminUsers: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+          <button className="btn-outline" style={{ width: 'auto' }} disabled={currentPage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))}>
+            ← Previous
+          </button>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Page <strong>{Math.min(currentPage, totalPages)}</strong> of <strong>{totalPages}</strong>
+          </span>
+          <button className="btn-outline" style={{ width: 'auto' }} disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}>
+            Next →
+          </button>
+        </div>
+      )}
+
+      {/* User Detail Modal */}
+      <Modal isOpen={!!detailModalData} onClose={() => setDetailModalData(null)} title="User Detail View">
+        {detailLoading || detailModalData?.loading ? (
+          <p>Loading user details...</p>
+        ) : detailModalData?.user ? (
+          <div style={{ maxHeight: '70vh', overflowY: 'auto', fontSize: '0.9rem' }}>
+            <p><strong>{detailModalData.user.name}</strong> ({detailModalData.user.email}) — <span style={{ textTransform: 'capitalize' }}>{detailModalData.user.role}</span></p>
+            <div style={{ marginBottom: '1rem' }}>
+              <button className="btn-outline" style={{ width: 'auto', color: '#dc2626', borderColor: '#fca5a5' }} onClick={() => handleRevokeAllUserSessions(detailModalData.user.id)}>
+                🔑 Revoke All Sessions
+              </button>
+            </div>
+            <h4>Enrollments / Courses ({(detailModalData.enrollments?.length || 0) + (detailModalData.taught_courses?.length || 0)})</h4>
+            <ul>
+              {detailModalData.enrollments?.map((e: any) => (
+                <li key={e.id}>{e.course_code}: {e.course_name} ({e.status}{e.grade ? `, Grade: ${e.grade}` : ''})</li>
+              ))}
+              {detailModalData.taught_courses?.map((c: any) => (
+                <li key={c.id}>Teaches {c.course_code}: {c.course_name}</li>
+              ))}
+            </ul>
+            <h4>Study Groups ({detailModalData.groups?.length || 0})</h4>
+            <ul>
+              {detailModalData.groups?.map((g: any) => (
+                <li key={`${g.role}-${g.id}`}>{g.name} ({g.role})</li>
+              ))}
+            </ul>
+            <h4>Sessions ({detailModalData.sessions?.length || 0})</h4>
+            <ul>
+              {detailModalData.sessions?.map((s: any) => (
+                <li key={s.id}>{s.device_hint} — {s.ip_address || 'Unknown IP'} ({s.is_active ? 'Active' : 'Revoked'})</li>
+              ))}
+            </ul>
+            <h4>Recent Activity ({detailModalData.recent_activity?.length || 0})</h4>
+            <ul>
+              {detailModalData.recent_activity?.slice(0, 10).map((ev: any) => (
+                <li key={ev.id}>[{ev.event_type}] {ev.detail} ({new Date(ev.created_at).toLocaleString()})</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </Modal>
 
       {/* Create User Modal */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New User">

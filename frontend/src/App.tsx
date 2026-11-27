@@ -30,8 +30,10 @@ import AdminApprovals from './pages/AdminApprovals';
 import AdminSecurity from './pages/AdminSecurity';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 
-// Shared Inbox
+// Shared Inbox, Groups & Profile
 import AnnouncementsInbox from './pages/AnnouncementsInbox';
+import GroupsPage from './pages/GroupsPage';
+import ProfilePage from './pages/ProfilePage';
 
 const Sidebar: React.FC<{ isOpen: boolean; closeSidebar: () => void }> = ({ isOpen, closeSidebar }) => {
   const auth = useContext(AuthContext);
@@ -132,6 +134,9 @@ const Sidebar: React.FC<{ isOpen: boolean; closeSidebar: () => void }> = ({ isOp
               <Link to="/admin/security" onClick={closeSidebar} className={location.pathname.includes('security') ? 'active' : ''}>🔒 Security Center</Link>
             </>
           )}
+
+          <Link to="/groups" onClick={closeSidebar} className={location.pathname.startsWith('/groups') ? 'active' : ''}>👥 Study Groups</Link>
+          <Link to="/profile" onClick={closeSidebar} className={location.pathname.startsWith('/profile') ? 'active' : ''}>⚙️ Profile & Sessions</Link>
         </div>
 
         {/* Enhanced User Profile Card */}
@@ -321,6 +326,10 @@ const App: React.FC = () => {
               <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AdminAnnouncements /></ProtectedRoute>} />
               <Route path="/admin/security" element={<ProtectedRoute allowedRoles={['admin']}><AdminSecurity /></ProtectedRoute>} />
+
+              {/* Shared Authenticated Routes */}
+              <Route path="/groups" element={<ProtectedRoute allowedRoles={['student', 'faculty', 'admin']}><GroupsPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'faculty', 'admin']}><ProfilePage /></ProtectedRoute>} />
 
               {/* Default catch-all routes */}
               <Route path="/" element={<Navigate to="/login" replace />} />

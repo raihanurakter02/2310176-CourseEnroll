@@ -20,6 +20,7 @@ export const getWsUrl = () => {
 
 const api = axios.create({
   baseURL: getBaseUrl(),
+  withCredentials: true,
 });
 
 // ---------------------------------------------------------------------------
@@ -115,12 +116,25 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string | null) => void> = [];
+
+const subscribeTokenRefresh = (cb: (token: string | null) => void) => {
+  refreshSubscribers.push(cb);
+};
+
+const onTokenRefreshed = (newToken: string | null) => {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const detail = error.response?.data?.detail || '';
-    const requestUrl = error.config?.url || '';
+    const originalRequest = error.config || {};
+    const requestUrl = originalRequest.url || '';
 
     // If logging out or already logged out manually, silence 401
     const isManual = sessionStorage.getItem('manual_logout') === 'true';
@@ -129,7 +143,58 @@ api.interceptors.response.use(
       return Promise.resolve({ data: { message: 'Logged out' } });
     }
 
-    if (status === 401) {
+    if (
+      status === 401 &&
+      !originalRequest._retry &&
+      !isManual &&
+      !requestUrl.includes('/auth/login') &&
+      !requestUrl.includes('/auth/refresh')
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((newToken) => {
+            if (!newToken) {
+              reject(error);
+              return;
+            }
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await axios.post(
+          `${getBaseUrl()}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+        const newToken = refreshRes.data?.access_token;
+        if (newToken) {
+          localStorage.setItem('access_token', newToken);
+          onTokenRefreshed(newToken);
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+      } catch {
+        onTokenRefreshed(null);
+      } finally {
+        isRefreshing = false;
+      }
+
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('cached_user');
+      localStorage.removeItem('token');
+      invalidateApiCache();
+      window.dispatchEvent(new CustomEvent('auth:logout', {
+        detail: { reason: detail || 'Session expired. Please sign in again.' }
+      }));
+    } else if (status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('token');
       invalidateApiCache();
@@ -140,6 +205,7 @@ api.interceptors.response.use(
       }
     } else if (status === 403 && (detail.toLowerCase().includes('suspended') || detail.toLowerCase().includes('banned'))) {
       localStorage.removeItem('access_token');
+      localStorage.removeItem('cached_user');
       localStorage.removeItem('token');
       invalidateApiCache();
       if (!isManual) {

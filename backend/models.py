@@ -35,9 +35,24 @@ class User(Base):
     login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
     token_version = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     taught_courses = relationship("Course", back_populates="faculty")
     enrollments = relationship("Enrollment", back_populates="student")
+
+
+class RefreshToken(Base):
+    """Hashed server-side refresh tokens for rotation and revocation."""
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    token_hash = Column(String, unique=True, index=True)
+    session_jti = Column(String, index=True, nullable=True)
+    expires_at = Column(DateTime, index=True)
+    revoked = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User")
 
 
 class TokenBlacklist(Base):
@@ -171,3 +186,52 @@ class Attendance(Base):
 
     enrollment = relationship("Enrollment", back_populates="attendance_records")
     session = relationship("ClassSession", back_populates="attendances")
+
+
+class StudyGroup(Base):
+    """Shared course/study group with fine-grained member permissions."""
+    __tablename__ = "study_groups"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(Text, nullable=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    course = relationship("Course")
+    members = relationship("StudyGroupMember", back_populates="group", cascade="all, delete-orphan")
+    items = relationship("StudyGroupItem", back_populates="group", cascade="all, delete-orphan")
+
+
+class StudyGroupMember(Base):
+    """Membership and fine-grained permissions inside a StudyGroup."""
+    __tablename__ = "study_group_members"
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    can_create = Column(Boolean, default=False)
+    can_edit = Column(Boolean, default=False)
+    can_assign = Column(Boolean, default=False)
+    joined_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    group = relationship("StudyGroup", back_populates="members")
+    user = relationship("User")
+
+
+class StudyGroupItem(Base):
+    """Shared task/resource inside a StudyGroup."""
+    __tablename__ = "study_group_items"
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id"), index=True)
+    title = Column(String)
+    description = Column(Text, nullable=True)
+    status = Column(String, default="todo")  # todo, in_progress, done
+    created_by = Column(Integer, ForeignKey("users.id"), index=True)
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    group = relationship("StudyGroup", back_populates="items")
+    creator = relationship("User", foreign_keys=[created_by])
+    assignee = relationship("User", foreign_keys=[assigned_to])

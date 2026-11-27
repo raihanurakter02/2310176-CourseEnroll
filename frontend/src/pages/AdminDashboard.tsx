@@ -12,18 +12,29 @@ const AdminDashboard: React.FC = () => {
       courses: cachedCourses.length,
       students: cachedUsers.filter((u: any) => u.role === 'student').length,
       faculty: cachedUsers.filter((u: any) => u.role === 'faculty').length,
+      totalUsers: cachedUsers.length,
+      bannedUsers: 0,
+      enrollments: 0,
+      groups: 0,
+      newUsers7d: 0,
     };
   });
 
   useEffect(() => {
     if (auth?.user) {
-      Promise.all([api.get('/courses'), api.get('/users')])
-        .then(([courseRes, userRes]) => {
+      Promise.all([api.get('/courses'), api.get('/users'), api.get('/admin/security/stats')])
+        .then(([courseRes, userRes, secRes]) => {
           const allUsers = userRes.data;
+          const sec = secRes.data || {};
           setStats({
-            courses: courseRes.data.length,
+            courses: sec.total_courses ?? courseRes.data.length,
             students: allUsers.filter((u: any) => u.role === 'student').length,
             faculty: allUsers.filter((u: any) => u.role === 'faculty').length,
+            totalUsers: sec.total_users ?? allUsers.length,
+            bannedUsers: sec.banned_users ?? 0,
+            enrollments: sec.total_enrollments ?? 0,
+            groups: sec.total_groups ?? 0,
+            newUsers7d: sec.new_users_7d ?? 0,
           });
         })
         .catch(() => console.error("Failed to load metrics"));
@@ -49,6 +60,18 @@ const AdminDashboard: React.FC = () => {
         <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
           <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Active Faculty</p>
           <h2 style={{ margin: 0, fontSize: '2.5rem', color: '#d97706' }}>{stats.faculty}</h2>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Total Users (7d New)</p>
+          <h2 style={{ margin: 0, fontSize: '2.5rem', color: '#2563eb' }}>{stats.totalUsers} <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>(+{stats.newUsers7d})</span></h2>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Banned Users</p>
+          <h2 style={{ margin: 0, fontSize: '2.5rem', color: '#dc2626' }}>{stats.bannedUsers}</h2>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Enrollments / Groups</p>
+          <h2 style={{ margin: 0, fontSize: '2.5rem', color: '#7c3aed' }}>{stats.enrollments} / {stats.groups}</h2>
         </div>
       </div>
 

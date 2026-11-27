@@ -1,17 +1,20 @@
 import asyncio
+import csv
 import datetime
+import io
 import time
 from typing import Any, Optional
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
+from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import text, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
-from backend import auth, models, schemas
+from backend import auth, models, rbac, schemas
 from backend.database import engine, get_db
 
 class NotificationManager:
@@ -96,6 +99,7 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts INTEGER DEFAULT 0;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"))
 
         conn.commit()
     except SQLAlchemyError:
@@ -438,9 +442,40 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):  # n
     return new_user
 
 
+def _set_refresh_cookie(response: Response, raw_token: str, request: Request):
+    """Set httpOnly refresh_token cookie with cross-site flags when served over HTTPS."""
+    is_https = (
+        request.url.scheme == "https"
+        or request.headers.get("x-forwarded-proto", "").lower() == "https"
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=raw_token,
+        httponly=True,
+        max_age=auth.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/",
+        samesite="none" if is_https else "lax",
+        secure=is_https,
+    )
+
+
+def _clear_refresh_cookie(response: Response, request: Request):
+    is_https = (
+        request.url.scheme == "https"
+        or request.headers.get("x-forwarded-proto", "").lower() == "https"
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        samesite="none" if is_https else "lax",
+        secure=is_https,
+    )
+
+
 @app.post("/auth/login")
 def login(
     request: Request,
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):  # noqa: B008
@@ -520,6 +555,18 @@ def login(
     )
     db.add(new_session)
 
+    # Issue hashed server-side refresh token + httpOnly cookie
+    raw_refresh = auth.generate_refresh_token()
+    db.add(
+        models.RefreshToken(
+            user_id=user.id,
+            token_hash=auth.hash_refresh_token(raw_refresh),
+            session_jti=jti,
+            expires_at=datetime.datetime.utcnow() + datetime.timedelta(days=auth.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+    )
+    _set_refresh_cookie(response, raw_refresh, request)
+
     log_security_event(
         db,
         event_type="login_success",
@@ -535,22 +582,248 @@ def login(
     return {"access_token": access_token, "token_type": "bearer", "role": role_val}
 
 
+@app.post("/auth/refresh")
+def refresh_access_token(
+    request: Request,
+    response: Response,
+    refresh_token: Optional[str] = Cookie(default=None),
+    body: Optional[dict] = Body(default=None),
+    db: Session = Depends(get_db),
+):
+    """Rotate httpOnly refresh token and issue a fresh short-lived JWT access token."""
+    raw_token = refresh_token or (body.get("refresh_token") if isinstance(body, dict) else None)
+    if not raw_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
+
+    token_hash = auth.hash_refresh_token(raw_token)
+    rt = db.query(models.RefreshToken).filter(models.RefreshToken.token_hash == token_hash).first()
+    if not rt or rt.revoked or rt.expires_at < datetime.datetime.utcnow():
+        _clear_refresh_cookie(response, request)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+
+    user = db.query(models.User).filter(models.User.id == rt.user_id).first()
+    if not user or not user.is_active or user.is_banned:
+        rt.revoked = True
+        db.commit()
+        _clear_refresh_cookie(response, request)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended or inactive")
+
+    # Ensure linked session wasn't revoked
+    if rt.session_jti:
+        sess = db.query(models.UserSession).filter(models.UserSession.jti == rt.session_jti).first()
+        if sess and not sess.is_active:
+            rt.revoked = True
+            db.commit()
+            _clear_refresh_cookie(response, request)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked")
+
+    # Rotate: revoke old refresh token
+    rt.revoked = True
+
+    role_val = user.role.value if hasattr(user.role, "value") else user.role
+    token_version = user.token_version if user.token_version is not None else 0
+    new_access_token = auth.create_access_token(
+        data={
+            "sub": user.email,
+            "role": role_val,
+            "name": user.name,
+            "id": user.id,
+            "tv": token_version,
+        }
+    )
+    decoded = jwt.decode(new_access_token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+    new_jti = decoded["jti"]
+
+    # Update session JTI & last_seen
+    if rt.session_jti:
+        db.query(models.UserSession).filter(models.UserSession.jti == rt.session_jti).update({
+            "jti": new_jti,
+            "last_seen": datetime.datetime.utcnow(),
+        })
+    else:
+        ua = request.headers.get("user-agent", "Unknown")
+        db.add(models.UserSession(
+            user_id=user.id,
+            jti=new_jti,
+            ip_address=request.client.host if request.client else None,
+            user_agent=ua,
+            device_hint=parse_device_hint(ua),
+        ))
+
+    new_raw_refresh = auth.generate_refresh_token()
+    db.add(
+        models.RefreshToken(
+            user_id=user.id,
+            token_hash=auth.hash_refresh_token(new_raw_refresh),
+            session_jti=new_jti,
+            expires_at=datetime.datetime.utcnow() + datetime.timedelta(days=auth.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+    )
+    db.commit()
+    _set_refresh_cookie(response, new_raw_refresh, request)
+
+    return {"access_token": new_access_token, "token_type": "bearer", "role": role_val}
+
+
 @app.get("/auth/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):  # noqa: B008
     return current_user
 
 
-@app.post("/auth/logout")
-def logout_user(
+@app.put("/auth/me", response_model=schemas.UserResponse)
+def update_my_profile(
+    profile: schemas.ProfileUpdate,
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Graceful logout: blacklists token jti and marks active session as inactive."""
+    """Update the authenticated user's own profile (name, email)."""
+    existing = db.query(models.User).filter(models.User.email == profile.email, models.User.id != current_user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already in use by another account")
+    current_user.name = profile.name.strip()
+    current_user.email = profile.email.strip()
+    invalidate_auth_cache(user_id=current_user.id)
+    log_security_event(
+        db,
+        event_type="profile_updated",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail="User updated profile details",
+    )
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@app.post("/auth/change-password")
+def change_my_password(
+    payload: schemas.PasswordChangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Change current user's password; verifies current password and records failed attempts."""
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "Unknown")
+
+    if not auth.verify_password(payload.current_password, current_user.password_hash):
+        log_security_event(
+            db,
+            event_type="password_change_failed",
+            severity="warning",
+            user_id=current_user.id,
+            user_email=current_user.email,
+            ip_address=ip,
+            user_agent=ua,
+            detail="Incorrect current password provided during password change",
+        )
+        db.commit()
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
+    if payload.new_password == payload.current_password:
+        raise HTTPException(status_code=400, detail="New password must be different from current password")
+
+    current_user.password_hash = auth.get_password_hash(payload.new_password)
+    invalidate_auth_cache(user_id=current_user.id)
+    log_security_event(
+        db,
+        event_type="password_change",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=ip,
+        user_agent=ua,
+        detail="User changed their password successfully",
+    )
+    db.commit()
+    return {"message": "Password changed successfully"}
+
+
+@app.get("/auth/sessions", response_model=list[schemas.UserSessionResponse])
+def list_my_sessions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """List the authenticated user's own login sessions."""
+    sessions = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.user_id == current_user.id)
+        .order_by(models.UserSession.last_seen.desc())
+        .all()
+    )
+    return [
+        schemas.UserSessionResponse(
+            id=s.id,
+            user_id=s.user_id,
+            jti=s.jti,
+            ip_address=s.ip_address,
+            user_agent=s.user_agent,
+            device_hint=s.device_hint,
+            created_at=s.created_at,
+            last_seen=s.last_seen,
+            is_active=s.is_active,
+            user_name=current_user.name,
+            user_email=current_user.email,
+        )
+        for s in sessions
+    ]
+
+
+@app.delete("/auth/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_my_session(
+    session_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Revoke one of the current user's own sessions (enforces ownership)."""
+    sess = db.query(models.UserSession).filter(models.UserSession.id == session_id).first()
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+    rbac.ensure_owner_or_admin(sess.user_id, current_user, detail="Cannot revoke another user's session")
+
+    existing_bl = db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == sess.jti).first()
+    if not existing_bl:
+        db.add(models.TokenBlacklist(jti=sess.jti, user_id=sess.user_id, reason="user_session_revoke"))
+    db.query(models.RefreshToken).filter(models.RefreshToken.session_jti == sess.jti).update({"revoked": True})
+    sess.is_active = False
+    invalidate_auth_cache(jti=sess.jti)
+    log_security_event(
+        db,
+        event_type="session_revoked",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"User revoked their own session {session_id}",
+    )
+    db.commit()
+
+
+@app.post("/auth/logout")
+def logout_user(
+    request: Request,
+    response: Response,
+    refresh_token: Optional[str] = Cookie(default=None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Graceful logout: blacklists token jti, revokes refresh token, clears cookie."""
     auth_header = request.headers.get("Authorization", "")
     token = auth_header.replace("Bearer ", "").strip()
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent", "Unknown")
+
+    if refresh_token:
+        rt_hash = auth.hash_refresh_token(refresh_token)
+        db.query(models.RefreshToken).filter(models.RefreshToken.token_hash == rt_hash).update({"revoked": True})
 
     if token:
         try:
@@ -561,6 +834,7 @@ def logout_user(
                 if not existing:
                     db.add(models.TokenBlacklist(jti=jti, user_id=current_user.id, reason="user_logout"))
                 db.query(models.UserSession).filter(models.UserSession.jti == jti).update({"is_active": False})
+                db.query(models.RefreshToken).filter(models.RefreshToken.session_jti == jti).update({"revoked": True})
                 invalidate_auth_cache(jti=jti)
                 log_security_event(
                     db,
@@ -576,29 +850,24 @@ def logout_user(
         except Exception:
             db.rollback()
 
+    _clear_refresh_cookie(response, request)
     return {"message": "Logged out successfully"}
 
 
 # ---------------------------------------------------------------------------
-# RBAC DEPENDENCY
+# RBAC DEPENDENCY (from reusable backend/rbac.py module)
 # ---------------------------------------------------------------------------
-class RoleChecker:
-    def __init__(self, allowed_roles: list[models.UserRole]):
-        self.allowed_roles = allowed_roles
-
-    def __call__(self, user: models.User = Depends(get_current_user)):  # noqa: B008
-        if user.role not in self.allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Operation not permitted for your role",
-            )
-        return user
+RoleChecker = rbac.make_role_checker(get_current_user)
+PermissionChecker = rbac.make_permission_checker(get_current_user)
 
 
 allow_all_roles = RoleChecker([models.UserRole.student, models.UserRole.faculty, models.UserRole.admin])
 allow_admin_only = RoleChecker([models.UserRole.admin])
 allow_faculty_only = RoleChecker([models.UserRole.faculty])
 allow_student_only = RoleChecker([models.UserRole.student])
+
+from backend.groups import create_groups_router
+app.include_router(create_groups_router(allow_all_roles, log_security_event))
 
 
 # ---------------------------------------------------------------------------
@@ -1072,15 +1341,41 @@ def get_all_users(db: Session = Depends(get_db), current_user: models.User = Dep
 
 
 @app.put("/users/{user_id}", response_model=schemas.UserResponse)
-def update_user(user_id: int, user_data: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(allow_admin_only)):  # noqa: B008
+def update_user(
+    user_id: int,
+    user_data: schemas.UserUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):  # noqa: B008
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Safety rule: an admin cannot change their own role
+    if user_id == current_user.id and user_data.role != user.role:
+        raise HTTPException(status_code=400, detail="Administrators cannot change their own role")
+
+    old_role = user.role.value if hasattr(user.role, "value") else str(user.role)
+    new_role = user_data.role.value if hasattr(user_data.role, "value") else str(user_data.role)
+
     setattr(user, "name", user_data.name)
     setattr(user, "email", user_data.email)
     setattr(user, "role", user_data.role)
-    
+
+    if old_role != new_role:
+        log_security_event(
+            db,
+            event_type="role_change",
+            severity="warning",
+            user_id=user.id,
+            user_email=user.email,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent", "Unknown"),
+            detail=f"Role changed from {old_role} to {new_role} by {current_user.email}",
+        )
+    invalidate_auth_cache(user_id=user.id)
+    invalidate_data_cache("admin_users_list")
     db.commit()
     db.refresh(user)
     return user
@@ -1148,19 +1443,62 @@ def update_enrollment_status(enrollment_id: int, status_update: schemas.Enrollme
 
 @app.get("/admin/security/events", response_model=list[schemas.SecurityEventResponse])
 def list_security_events(
-    limit: int = 50,
+    limit: int = 100,
     offset: int = 0,
+    event_type: Optional[str] = None,
+    severity: Optional[str] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(allow_admin_only),
 ):
-    """List security audit log events, paginated."""
+    """List security audit log events with optional filters and pagination."""
+    q = db.query(models.SecurityEvent)
+    if event_type and event_type != "all":
+        q = q.filter(models.SecurityEvent.event_type == event_type)
+    if severity and severity != "all":
+        q = q.filter(models.SecurityEvent.severity == severity)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.filter(
+            (models.SecurityEvent.user_email.ilike(term))
+            | (models.SecurityEvent.ip_address.ilike(term))
+            | (models.SecurityEvent.detail.ilike(term))
+            | (models.SecurityEvent.event_type.ilike(term))
+        )
     return (
-        db.query(models.SecurityEvent)
-        .order_by(models.SecurityEvent.created_at.desc())
+        q.order_by(models.SecurityEvent.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
+
+
+@app.get("/admin/security/failed-logins-summary")
+def failed_logins_summary(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Aggregate failed logins by IP address and by account email."""
+    by_ip_rows = (
+        db.query(models.SecurityEvent.ip_address, func.count(models.SecurityEvent.id))
+        .filter(models.SecurityEvent.event_type == "login_failed")
+        .group_by(models.SecurityEvent.ip_address)
+        .order_by(func.count(models.SecurityEvent.id).desc())
+        .limit(20)
+        .all()
+    )
+    by_account_rows = (
+        db.query(models.SecurityEvent.user_email, func.count(models.SecurityEvent.id))
+        .filter(models.SecurityEvent.event_type == "login_failed")
+        .group_by(models.SecurityEvent.user_email)
+        .order_by(func.count(models.SecurityEvent.id).desc())
+        .limit(20)
+        .all()
+    )
+    return {
+        "by_ip": [{"ip_address": ip or "Unknown", "count": cnt} for ip, cnt in by_ip_rows],
+        "by_account": [{"user_email": em or "Unknown", "count": cnt} for em, cnt in by_account_rows],
+    }
 
 
 @app.get("/admin/security/sessions", response_model=list[schemas.UserSessionResponse])
@@ -1346,13 +1684,14 @@ def security_stats(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(allow_admin_only),
 ):
-    """Return aggregate security statistics."""
+    """Return aggregate security and overview statistics."""
     cached = get_data_cached("admin_security_stats")
     if cached is not None:
         return cached
 
     now = datetime.datetime.utcnow()
     since_24h = now - datetime.timedelta(hours=24)
+    since_7d = now - datetime.timedelta(days=7)
 
     total_events = db.query(models.SecurityEvent).count()
     critical_events_24h = (
@@ -1375,6 +1714,12 @@ def security_stats(
         )
         .count()
     )
+    total_users = db.query(models.User).count()
+    total_courses = db.query(models.Course).count()
+    total_enrollments = db.query(models.Enrollment).count()
+    total_groups = db.query(models.StudyGroup).count()
+    new_users_7d = db.query(models.User).filter(models.User.created_at >= since_7d).count()
+    new_groups_7d = db.query(models.StudyGroup).filter(models.StudyGroup.created_at >= since_7d).count()
 
     stats = schemas.SecurityStatsResponse(
         total_events=total_events,
@@ -1382,9 +1727,390 @@ def security_stats(
         active_sessions=active_sessions,
         banned_users=banned_users,
         failed_logins_24h=failed_logins_24h,
+        total_users=total_users,
+        total_courses=total_courses,
+        total_enrollments=total_enrollments,
+        total_groups=total_groups,
+        new_users_7d=new_users_7d,
+        new_groups_7d=new_groups_7d,
     )
     set_data_cached("admin_security_stats", stats, ttl=15.0)
     return stats
+
+
+@app.get("/admin/users/{user_id}/details")
+def get_user_details(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Detailed admin view: user's records, groups, sessions, and recent activity."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    enrollments = (
+        db.query(models.Enrollment, models.Course)
+        .join(models.Course, models.Course.id == models.Enrollment.course_id)
+        .filter(models.Enrollment.student_id == user_id)
+        .all()
+    )
+    taught_courses = db.query(models.Course).filter(models.Course.faculty_id == user_id).all()
+
+    owned_groups = db.query(models.StudyGroup).filter(models.StudyGroup.owner_id == user_id).all()
+    member_groups = (
+        db.query(models.StudyGroup, models.StudyGroupMember)
+        .join(models.StudyGroupMember, models.StudyGroupMember.group_id == models.StudyGroup.id)
+        .filter(models.StudyGroupMember.user_id == user_id)
+        .all()
+    )
+
+    sessions = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.user_id == user_id)
+        .order_by(models.UserSession.last_seen.desc())
+        .limit(20)
+        .all()
+    )
+    events = (
+        db.query(models.SecurityEvent)
+        .filter((models.SecurityEvent.user_id == user_id) | (models.SecurityEvent.user_email == user.email))
+        .order_by(models.SecurityEvent.created_at.desc())
+        .limit(30)
+        .all()
+    )
+
+    return {
+        "user": schemas.UserResponse.model_validate(user),
+        "enrollments": [
+            {
+                "id": e.id,
+                "course_id": c.id,
+                "course_code": c.course_code,
+                "course_name": c.course_name,
+                "status": e.status.value if hasattr(e.status, "value") else e.status,
+                "grade": e.grade,
+            }
+            for e, c in enrollments
+        ],
+        "taught_courses": [
+            {"id": c.id, "course_code": c.course_code, "course_name": c.course_name}
+            for c in taught_courses
+        ],
+        "groups": [
+            {"id": g.id, "name": g.name, "role": "owner"} for g in owned_groups
+        ] + [
+            {
+                "id": g.id,
+                "name": g.name,
+                "role": "member",
+                "can_create": m.can_create,
+                "can_edit": m.can_edit,
+                "can_assign": m.can_assign,
+            }
+            for g, m in member_groups
+        ],
+        "sessions": [
+            {
+                "id": s.id,
+                "device_hint": s.device_hint,
+                "ip_address": s.ip_address,
+                "is_active": s.is_active,
+                "created_at": s.created_at,
+                "last_seen": s.last_seen,
+            }
+            for s in sessions
+        ],
+        "recent_activity": [schemas.SecurityEventResponse.model_validate(ev) for ev in events],
+    }
+
+
+@app.post("/admin/security/users/{user_id}/revoke-sessions")
+def revoke_all_user_sessions(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Revoke all active sessions and refresh tokens for a specific user."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    active_sessions = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.user_id == user_id, models.UserSession.is_active == True)
+        .all()
+    )
+    for sess in active_sessions:
+        if not db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == sess.jti).first():
+            db.add(models.TokenBlacklist(jti=sess.jti, user_id=user_id, reason="admin_revoke_all"))
+        sess.is_active = False
+
+    db.query(models.RefreshToken).filter(models.RefreshToken.user_id == user_id).update({"revoked": True})
+    user.token_version = (user.token_version or 0) + 1
+    invalidate_auth_cache(user_id=user_id)
+    invalidate_data_cache("admin_security_stats")
+
+    log_security_event(
+        db,
+        event_type="session_revoked",
+        severity="warning",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"All sessions revoked for {user.email} by {current_user.email}",
+    )
+    db.commit()
+    return {"message": f"Revoked all sessions for {user.email}"}
+
+
+@app.post("/admin/security/users/bulk-ban")
+def bulk_ban_users(
+    payload: schemas.BulkUserActionRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Bulk ban multiple non-admin users."""
+    banned_count = 0
+    for uid in payload.user_ids:
+        user = db.query(models.User).filter(models.User.id == uid).first()
+        if not user or user.role == models.UserRole.admin:
+            continue
+        user.is_banned = True
+        user.ban_reason = payload.ban_reason or "Bulk administrative suspension"
+        active_sessions = db.query(models.UserSession).filter(models.UserSession.user_id == uid, models.UserSession.is_active == True).all()
+        for sess in active_sessions:
+            if not db.query(models.TokenBlacklist).filter(models.TokenBlacklist.jti == sess.jti).first():
+                db.add(models.TokenBlacklist(jti=sess.jti, user_id=uid, reason="user_banned"))
+            sess.is_active = False
+        db.query(models.RefreshToken).filter(models.RefreshToken.user_id == uid).update({"revoked": True})
+        invalidate_auth_cache(user_id=uid)
+        banned_count += 1
+
+    invalidate_data_cache("admin_security_stats", "admin_users_list")
+    log_security_event(
+        db,
+        event_type="user_banned",
+        severity="critical",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Bulk banned {banned_count} user(s). Reason: {payload.ban_reason}",
+    )
+    db.commit()
+    return {"message": f"Banned {banned_count} user(s)", "count": banned_count}
+
+
+@app.post("/admin/security/users/bulk-unban")
+def bulk_unban_users(
+    payload: schemas.BulkUserActionRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    """Bulk unban multiple users."""
+    unbanned_count = 0
+    for uid in payload.user_ids:
+        user = db.query(models.User).filter(models.User.id == uid).first()
+        if not user:
+            continue
+        user.is_banned = False
+        user.ban_reason = None
+        invalidate_auth_cache(user_id=uid)
+        unbanned_count += 1
+
+    invalidate_data_cache("admin_security_stats", "admin_users_list")
+    log_security_event(
+        db,
+        event_type="user_unbanned",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Bulk unbanned {unbanned_count} user(s)",
+    )
+    db.commit()
+    return {"message": f"Unbanned {unbanned_count} user(s)", "count": unbanned_count}
+
+
+@app.post("/admin/moderation/courses/bulk-delete")
+def bulk_delete_courses(
+    payload: schemas.BulkDeleteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    deleted = 0
+    for cid in payload.ids:
+        course = db.query(models.Course).filter(models.Course.id == cid).first()
+        if course:
+            db.query(models.Enrollment).filter(models.Enrollment.course_id == cid).delete()
+            db.delete(course)
+            deleted += 1
+    invalidate_data_cache("courses")
+    log_security_event(
+        db,
+        event_type="record_deleted",
+        severity="warning",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Bulk deleted {deleted} course(s)",
+    )
+    db.commit()
+    return {"deleted": deleted}
+
+
+@app.post("/admin/moderation/groups/bulk-delete")
+def bulk_delete_groups(
+    payload: schemas.BulkDeleteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    deleted = 0
+    for gid in payload.ids:
+        group = db.query(models.StudyGroup).filter(models.StudyGroup.id == gid).first()
+        if group:
+            db.delete(group)
+            deleted += 1
+    log_security_event(
+        db,
+        event_type="record_deleted",
+        severity="warning",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Bulk deleted {deleted} group(s)",
+    )
+    db.commit()
+    return {"deleted": deleted}
+
+
+def _csv_response(rows: list[list[Any]], headers: list[str], filename: str):
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/admin/export/users")
+def export_users_csv(
+    request: Request,
+    role: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    q = db.query(models.User)
+    if role and role != "all":
+        q = q.filter(models.User.role == role)
+    if status_filter == "banned":
+        q = q.filter(models.User.is_banned == True)
+    elif status_filter == "active":
+        q = q.filter(models.User.is_banned == False)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.filter((models.User.name.ilike(term)) | (models.User.email.ilike(term)))
+
+    users = q.all()
+    log_security_event(
+        db,
+        event_type="export_csv",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Exported {len(users)} users to CSV",
+    )
+    db.commit()
+    rows = [
+        [u.id, u.name, u.email, u.role.value if hasattr(u.role, "value") else u.role, u.is_banned, u.ban_reason or ""]
+        for u in users
+    ]
+    return _csv_response(rows, ["ID", "Name", "Email", "Role", "Is Banned", "Ban Reason"], "users_export.csv")
+
+
+@app.get("/admin/export/records")
+def export_records_csv(
+    request: Request,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    q = db.query(models.Course)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.filter((models.Course.course_code.ilike(term)) | (models.Course.course_name.ilike(term)))
+    courses = q.all()
+    log_security_event(
+        db,
+        event_type="export_csv",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Exported {len(courses)} course records to CSV",
+    )
+    db.commit()
+    rows = [[c.id, c.course_code, c.course_name, c.credit, c.capacity, c.room, c.schedule_days] for c in courses]
+    return _csv_response(rows, ["ID", "Code", "Name", "Credit", "Capacity", "Room", "Schedule"], "records_export.csv")
+
+
+@app.get("/admin/export/events")
+def export_events_csv(
+    request: Request,
+    event_type: Optional[str] = None,
+    severity: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(allow_admin_only),
+):
+    q = db.query(models.SecurityEvent)
+    if event_type and event_type != "all":
+        q = q.filter(models.SecurityEvent.event_type == event_type)
+    if severity and severity != "all":
+        q = q.filter(models.SecurityEvent.severity == severity)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.filter(
+            (models.SecurityEvent.user_email.ilike(term))
+            | (models.SecurityEvent.ip_address.ilike(term))
+            | (models.SecurityEvent.detail.ilike(term))
+        )
+    events = q.order_by(models.SecurityEvent.created_at.desc()).limit(1000).all()
+    log_security_event(
+        db,
+        event_type="export_csv",
+        severity="info",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent", "Unknown"),
+        detail=f"Exported {len(events)} audit events to CSV",
+    )
+    db.commit()
+    rows = [
+        [e.id, e.created_at.isoformat() if e.created_at else "", e.event_type, e.severity, e.user_email or "", e.ip_address or "", e.user_agent or "", e.detail or ""]
+        for e in events
+    ]
+    return _csv_response(rows, ["ID", "Timestamp", "Event Type", "Severity", "User Email", "IP Address", "Browser/UA", "Detail"], "audit_log_export.csv")
 
 
 # ---------------------------------------------------------------------------

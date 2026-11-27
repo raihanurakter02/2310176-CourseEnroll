@@ -53,11 +53,17 @@ interface User {
 const EVENT_LABELS: Record<string, string> = {
   login_success: '✅ Login Success',
   login_failed: '⚠️ Failed Login',
+  user_logout: '🚪 Logout',
+  password_change: '🔑 Password Changed',
+  password_change_failed: '⚠️ Password Change Failed',
+  role_change: '🛡️ Role Changed',
   token_malformed: '🚨 Malformed Token',
   user_banned: '🔒 User Banned',
   user_unbanned: '🔓 User Unbanned',
   session_revoked: '🔑 Session Revoked',
   force_logout_all: '🚨 Force Logout All',
+  record_deleted: '🗑️ Record Deleted',
+  export_csv: '📥 CSV Exported',
   suspicious_activity: '🕵️ Suspicious Activity',
 };
 
@@ -101,7 +107,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 // ── Tab styles ─────────────────────────────────────────────────────────────────
 
-const TABS = ['Overview', 'Active Sessions', 'Security Events', 'User Access Control'] as const;
+const TABS = ['Overview', 'Active Sessions', 'Security Events', 'User Access Control', 'Content Moderation'] as const;
 type Tab = typeof TABS[number];
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
@@ -202,6 +208,65 @@ const AdminSecurity: React.FC = () => {
 
   // Users
   const [users, setUsers] = useState<User[]>(() => cachedUsers || []);
+  const [failedSummary, setFailedSummary] = useState<{ by_ip: any[]; by_account: any[] }>({ by_ip: [], by_account: [] });
+  const [modCourses, setModCourses] = useState<any[]>([]);
+  const [modGroups, setModGroups] = useState<any[]>([]);
+  const [modSearch, setModSearch] = useState('');
+  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
+
+  const fetchModerationData = async () => {
+    try {
+      const [cRes, gRes] = await Promise.all([
+        api.get('/courses', { skipCache: true } as any),
+        api.get('/groups', { skipCache: true } as any),
+      ]);
+      setModCourses(cRes.data || []);
+      setModGroups(gRes.data || []);
+    } catch {
+      toast?.showToast('Failed to load moderation records', 'error');
+    }
+  };
+
+  const handleExportEvents = async () => {
+    try {
+      const res = await api.get('/admin/export/events', {
+        params: { severity: severityFilter, search: eventSearch },
+        responseType: 'blob',
+        skipCache: true,
+      } as any);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'audit_log_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast?.showToast('Audit log CSV exported', 'success');
+    } catch {
+      toast?.showToast('Failed to export audit log', 'error');
+    }
+  };
+
+  const handleExportRecords = async () => {
+    try {
+      const res = await api.get('/admin/export/records', {
+        params: { search: modSearch },
+        responseType: 'blob',
+        skipCache: true,
+      } as any);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'records_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast?.showToast('Records CSV exported', 'success');
+    } catch {
+      toast?.showToast('Failed to export records', 'error');
+    }
+  };
   const [usersLoading, setUsersLoading] = useState(false);
   const [banModalUser, setBanModalUser] = useState<User | null>(null);
   const [banReason, setBanReason] = useState('');
@@ -262,8 +327,12 @@ const AdminSecurity: React.FC = () => {
   const fetchStats = useCallback(async () => {
     if (!cachedStats) setStatsLoading(true);
     try {
-      const res = await api.get('/admin/security/stats');
+      const [res, failRes] = await Promise.all([
+        api.get('/admin/security/stats'),
+        api.get('/admin/security/failed-logins-summary', { skipCache: true } as any),
+      ]);
       if (res.data) setStats(res.data);
+      if (failRes.data) setFailedSummary(failRes.data);
     } catch (err) {
       console.error('Failed to load security stats', err);
     } finally {
@@ -320,6 +389,7 @@ const AdminSecurity: React.FC = () => {
     if (activeTab === 'Active Sessions') fetchSessions();
     if (activeTab === 'Security Events') fetchEvents();
     if (activeTab === 'User Access Control') fetchUsers();
+    if (activeTab === 'Content Moderation') fetchModerationData();
   }, [activeTab, fetchStats, fetchSessions, fetchEvents, fetchUsers]);
 
   // Auto-refresh events every 30s
@@ -501,6 +571,33 @@ const AdminSecurity: React.FC = () => {
           </button>
         </div>
       </Modal>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
+        <div className="course-card" style={{ padding: '1.25rem' }}>
+          <h4 style={{ marginTop: 0 }}>Failed Logins by IP</h4>
+          {failedSummary.by_ip.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No failed logins recorded.</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.85rem' }}>
+              {failedSummary.by_ip.map((item, idx) => (
+                <li key={idx}><code>{item.ip_address}</code>: <strong>{item.count}</strong> attempt(s)</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="course-card" style={{ padding: '1.25rem' }}>
+          <h4 style={{ marginTop: 0 }}>Failed Logins by Account</h4>
+          {failedSummary.by_account.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No failed logins recorded.</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.85rem' }}>
+              {failedSummary.by_account.map((item, idx) => (
+                <li key={idx}><strong>{item.user_email}</strong>: {item.count} attempt(s)</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -662,6 +759,13 @@ const AdminSecurity: React.FC = () => {
             <strong>{filteredEvents.length}</strong> of {events.length}
           </div>
           <button
+            onClick={handleExportEvents}
+            className="btn-outline"
+            style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
+          >
+            📥 Export CSV
+          </button>
+          <button
             onClick={fetchEvents}
             className="btn-outline"
             style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
@@ -683,7 +787,7 @@ const AdminSecurity: React.FC = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
             <thead>
               <tr style={{ background: '#f8f7f3', borderBottom: '1px solid var(--border)' }}>
-                {['Timestamp', 'Event Type', 'User', 'IP Address', 'Details', 'Severity'].map(h => (
+                {['Timestamp', 'Event Type', 'User', 'IP Address', 'Browser / UA', 'Details', 'Severity'].map(h => (
                   <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>{h}</th>
                 ))}
               </tr>
@@ -695,6 +799,7 @@ const AdminSecurity: React.FC = () => {
                   <td style={{ padding: '0.75rem 1rem', fontWeight: 600, fontSize: '0.85rem' }}>{formatEventType(ev.event_type)}</td>
                   <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem' }}>{ev.user_email ?? '—'}</td>
                   <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', fontSize: '0.78rem' }}>{ev.ip_address ?? '—'}</td>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.user_agent ?? '—'}</td>
                   <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.detail ?? '—'}</td>
                   <td style={{ padding: '0.75rem 1rem' }}><SeverityBadge severity={ev.severity} /></td>
                 </tr>
@@ -946,6 +1051,33 @@ const AdminSecurity: React.FC = () => {
           </button>
         </div>
       </Modal>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
+        <div className="course-card" style={{ padding: '1.25rem' }}>
+          <h4 style={{ marginTop: 0 }}>Failed Logins by IP</h4>
+          {failedSummary.by_ip.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No failed logins recorded.</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.85rem' }}>
+              {failedSummary.by_ip.map((item, idx) => (
+                <li key={idx}><code>{item.ip_address}</code>: <strong>{item.count}</strong> attempt(s)</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="course-card" style={{ padding: '1.25rem' }}>
+          <h4 style={{ marginTop: 0 }}>Failed Logins by Account</h4>
+          {failedSummary.by_account.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No failed logins recorded.</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.85rem' }}>
+              {failedSummary.by_account.map((item, idx) => (
+                <li key={idx}><strong>{item.user_email}</strong>: {item.count} attempt(s)</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -998,6 +1130,87 @@ const AdminSecurity: React.FC = () => {
       {activeTab === 'Active Sessions' && renderSessions()}
       {activeTab === 'Security Events' && renderEvents()}
       {activeTab === 'User Access Control' && renderUsers()}
+      {activeTab === 'Content Moderation' && (
+        <div>
+          <div className="premium-filter-bar">
+            <div className="premium-filter-controls">
+              <SearchInput placeholder="Filter courses or groups..." value={modSearch} onChange={setModSearch} />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn-outline" style={{ width: 'auto' }} onClick={handleExportRecords}>📥 Export Records CSV</button>
+              <button className="btn-outline" style={{ width: 'auto' }} onClick={fetchModerationData}>🔄 Refresh</button>
+            </div>
+          </div>
+
+          <div className="course-card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0 }}>Courses ({modCourses.length})</h3>
+              {selectedCourseIds.length > 0 && (
+                <button
+                  className="btn-danger"
+                  onClick={async () => {
+                    await api.post('/admin/moderation/courses/bulk-delete', { ids: selectedCourseIds });
+                    toast?.showToast(`Deleted ${selectedCourseIds.length} course(s)`, 'success');
+                    setSelectedCourseIds([]);
+                    fetchModerationData();
+                  }}
+                >
+                  Delete Selected ({selectedCourseIds.length})
+                </button>
+              )}
+            </div>
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead><tr><th>Select</th><th>Code</th><th>Name</th><th>Room</th></tr></thead>
+              <tbody>
+                {modCourses
+                  .filter(c => !modSearch.trim() || c.course_code.toLowerCase().includes(modSearch.toLowerCase()) || c.course_name.toLowerCase().includes(modSearch.toLowerCase()))
+                  .map(c => (
+                    <tr key={c.id}>
+                      <td><input type="checkbox" checked={selectedCourseIds.includes(c.id)} onChange={() => setSelectedCourseIds(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])} /></td>
+                      <td>{c.course_code}</td>
+                      <td>{c.course_name}</td>
+                      <td>{c.room}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="course-card" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0 }}>Study Groups ({modGroups.length})</h3>
+              {selectedGroupIds.length > 0 && (
+                <button
+                  className="btn-danger"
+                  onClick={async () => {
+                    await api.post('/admin/moderation/groups/bulk-delete', { ids: selectedGroupIds });
+                    toast?.showToast(`Deleted ${selectedGroupIds.length} group(s)`, 'success');
+                    setSelectedGroupIds([]);
+                    fetchModerationData();
+                  }}
+                >
+                  Delete Selected ({selectedGroupIds.length})
+                </button>
+              )}
+            </div>
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead><tr><th>Select</th><th>Name</th><th>Owner</th><th>Members</th></tr></thead>
+              <tbody>
+                {modGroups
+                  .filter(g => !modSearch.trim() || g.name.toLowerCase().includes(modSearch.toLowerCase()) || (g.owner_name || '').toLowerCase().includes(modSearch.toLowerCase()))
+                  .map(g => (
+                    <tr key={g.id}>
+                      <td><input type="checkbox" checked={selectedGroupIds.includes(g.id)} onChange={() => setSelectedGroupIds(p => p.includes(g.id) ? p.filter(x => x !== g.id) : [...p, g.id])} /></td>
+                      <td>{g.name}</td>
+                      <td>{g.owner_name} ({g.owner_email})</td>
+                      <td>{g.member_count}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

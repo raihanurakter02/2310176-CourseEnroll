@@ -22,9 +22,20 @@ class UserResponse(UserBase):
     is_banned: bool = False
     ban_reason: Optional[str] = None
     login_attempts: Optional[int] = 0
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class ProfileUpdate(BaseModel):
+    name: str
+    email: EmailStr
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 class SemesterBase(BaseModel):
     name: str
@@ -175,6 +186,21 @@ class SecurityStatsResponse(BaseModel):
     active_sessions: int
     banned_users: int
     failed_logins_24h: int
+    total_users: int = 0
+    total_courses: int = 0
+    total_enrollments: int = 0
+    total_groups: int = 0
+    new_users_7d: int = 0
+    new_groups_7d: int = 0
+
+
+class BulkUserActionRequest(BaseModel):
+    user_ids: list[int]
+    ban_reason: Optional[str] = "Bulk administrative suspension"
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
 
 
 # --- ANNOUNCEMENT / INBOX SCHEMAS ---
@@ -212,3 +238,93 @@ class AnnouncementResponse(AnnouncementBase):
 
 class UnreadCountResponse(BaseModel):
     unread_count: int
+
+
+# --- STUDY GROUP / TEAM PERMISSION SCHEMAS ---
+
+class GroupCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    course_id: Optional[int] = None
+
+
+class GroupUpdate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class GroupMemberAdd(BaseModel):
+    email: EmailStr
+    can_create: bool = False
+    can_edit: bool = False
+    can_assign: bool = False
+
+
+class GroupMemberUpdate(BaseModel):
+    can_create: bool
+    can_edit: bool
+    can_assign: bool
+
+
+class GroupMemberResponse(BaseModel):
+    id: int
+    user_id: int
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    can_create: bool
+    can_edit: bool
+    can_assign: bool
+    joined_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class GroupItemCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    assigned_to: Optional[int] = None
+
+
+class GroupItemUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    assigned_to: Optional[int] = None
+
+
+class GroupItemResponse(BaseModel):
+    id: int
+    group_id: int
+    title: str
+    description: Optional[str] = None
+    status: str
+    created_by: int
+    creator_name: Optional[str] = None
+    assigned_to: Optional[int] = None
+    assignee_name: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class GroupResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    course_id: Optional[int] = None
+    course_code: Optional[str] = None
+    owner_id: int
+    owner_name: Optional[str] = None
+    owner_email: Optional[str] = None
+    created_at: datetime
+    member_count: int = 0
+    item_count: int = 0
+    my_permissions: Optional[dict] = None
+    members: list[GroupMemberResponse] = []
+    items: list[GroupItemResponse] = []
+
+    class Config:
+        from_attributes = True

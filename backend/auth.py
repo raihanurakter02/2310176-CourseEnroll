@@ -1,4 +1,6 @@
 import os
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 import jwt
@@ -8,7 +10,8 @@ import uuid
 SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-production")
 PEPPER = os.getenv("PASSWORD_PEPPER", "ce_secure_server_pepper_2026")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 # Tell bcrypt to use fewer processing rounds so free-tier CPUs process it instantly
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=4)
@@ -36,3 +39,13 @@ def create_access_token(data: dict):
     })
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def generate_refresh_token() -> str:
+    """Generates a cryptographically secure opaque refresh token."""
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(token: str) -> str:
+    """Hashes a refresh token with the server pepper for safe DB storage."""
+    return hashlib.sha256(f"{token}{PEPPER}".encode("utf-8")).hexdigest()

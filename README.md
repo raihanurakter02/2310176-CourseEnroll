@@ -14,28 +14,33 @@ A production-ready academic ERP and course enrollment platform built with **Reac
 
 ## 👥 Seeded Instructor & Evaluator Test Accounts
 
-All demo accounts use the standardized password: **`password123`**
+> **Note:** Passwords for these demo accounts are provided in the final submission form and PDF report (never stored in the repository).
 
-### 1. Administrator Accounts (At least 2 required)
-| Name | Email | Password | Primary Role & Features to Test |
+### 1. Administrator Accounts
+| Name | User ID / Email | Role | Primary Features to Test |
 | :--- | :--- | :--- | :--- |
-| **Admin User** | `admin@university.edu` | `password123` | **Primary Admin**: Security Center, Approvals Queue, Session Revocation, User Bans. |
-| **Secondary Administrator** | `admin2@university.edu` | `password123` | **Co-Admin**: Verify Admin Immunity (Admins cannot ban or delete other admins). |
+| **Admin User** | `admin@university.edu` | `admin` | **Primary Admin**: Security Center, Approvals Queue, Session Revocation, User Bans, CSV Exports. |
+| **Secondary Administrator** | `admin2@university.edu` | `admin` | **Co-Admin**: Verify Admin Immunity (Admins cannot ban or delete other admins, nor change their own role). |
 
 ### 2. Faculty / Instructor Accounts
-| Name | Email | Password | Assigned Courses |
+| Name | User ID / Email | Role | Assigned Courses |
 | :--- | :--- | :--- | :--- |
-| **Sayef Reyadh** | `sreyadh@gmail.com` | `password123` | `CSE220` (Data Structures), `CSE307` (SAD), `CSE472` (Cloud DevOps) |
-| **mr potato** | `potato@gmail.com` | `password123` | `CSE115` (C Programming), `CSE425` (SQT & Testing) |
-| **Dr. Rubaiyat Islam** | `rubaiyat@gmail.com` | `password123` | `CSE311` (DBMS), `CSE499` (Senior Capstone) |
+| **Sayef Reyadh** | `sreyadh@gmail.com` | `faculty` | `CSE220` (Data Structures), `CSE307` (SAD), `CSE472` (Cloud DevOps) |
+| **mr potato** | `potato@gmail.com` | `faculty` | `CSE115` (C Programming), `CSE425` (SQT & Testing) |
+| **Dr. Rubaiyat Islam** | `rubaiyat@gmail.com` | `faculty` | `CSE311` (DBMS), `CSE499` (Senior Capstone) |
 
 ### 3. Student Accounts
-| Name | Email | Password | Academic Profile Highlights |
+| Name | User ID / Email | Role | Academic Profile Highlights |
 | :--- | :--- | :--- | :--- |
-| **Mila Vance (Showcase)** | `mila@gmail.com` | `password123` | **GPA 3.75**, 12 completed credits, 12 active credits, printable enrollment slip, weekly schedule timetable. |
-| **Raihanur Akter** | `rai@gmail.com` | `password123` | Active student registrations, catalog enrollment. |
-| **Alex Turner** | `alex@gmail.com` | `password123` | Active waitlist testing on `CSE425` and `CSE472`. |
-| **Cat Williams** | `cat@gmail.com` | `password123` | Standard student account with course history. |
+| **Mila Vance (Showcase)** | `mila@gmail.com` | `student` | **GPA 3.75**, 12 completed credits, 12 active credits, printable enrollment slip, weekly schedule timetable. |
+| **Raihanur Akter** | `rai@gmail.com` | `student` | Active student registrations, catalog enrollment. |
+| **Alex Turner** | `alex@gmail.com` | `student` | Active waitlist testing on `CSE425` and `CSE472`. |
+| **Cat Williams** | `cat@gmail.com` | `student` | Standard student account with course history. |
+
+### 4. Shared Study Group with Mixed Permissions
+| Group Name | Owner | Member Permissions |
+| :--- | :--- | :--- |
+| **CSE303 Capstone Team** (or created via `/groups`) | `mila@gmail.com` | `rai@gmail.com` (`create`, `edit`), `alex@gmail.com` (`assign` only), `cat@gmail.com` (read-only) |
 
 ---
 

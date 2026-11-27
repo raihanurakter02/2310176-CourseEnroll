@@ -15,6 +15,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   securityLogout: (reason: string) => void;
+  updateUser: (userData: User) => void;
   loading: boolean;
 }
 
@@ -33,28 +34,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState<boolean>(() => {
     const hasToken = !!localStorage.getItem('access_token');
     const hasUser = !!localStorage.getItem('cached_user');
-    return hasToken && !hasUser;
+    return hasToken || !hasUser;
   });
 
   useEffect(() => {
-    if (token) {
-      // Validate session in background or restore user data
-      api.get('/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(response => {
+    let active = true;
+    const restoreSession = async () => {
+      if (token) {
+        try {
+          const response = await api.get('/auth/me', { skipCache: true } as any);
+          if (!active) return;
           setUser(response.data);
-          try {
-            localStorage.setItem('cached_user', JSON.stringify(response.data));
-          } catch {
-            // ignore
-          }
-        })
-        .catch(() => logout())
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+          localStorage.setItem('cached_user', JSON.stringify(response.data));
+        } catch {
+          if (!active) return;
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('cached_user');
+          setToken(null);
+          setUser(null);
+        } finally {
+          if (active) setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    restoreSession();
 
     const handleSecurityLogout = (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -64,7 +69,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     window.addEventListener('auth:logout', handleSecurityLogout);
-    return () => window.removeEventListener('auth:logout', handleSecurityLogout);
+    return () => {
+      active = false;
+      window.removeEventListener('auth:logout', handleSecurityLogout);
+    };
   }, [token]);
 
   const login = (newToken: string, userData: User) => {
@@ -108,8 +116,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout();
   };
 
+  const updateUser = (userData: User) => {
+    setUser(userData);
+    try {
+      localStorage.setItem('cached_user', JSON.stringify(userData));
+    } catch {
+      // ignore
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, securityLogout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, securityLogout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
