@@ -347,6 +347,7 @@ This Software Requirements Specification (SRS) establishes the complete function
 
 
 *Figure 2: System Use Case Model across User Actors*
+
 Table 13: Detailed Use Case Specifications
 ·        Use Case UC-01: Authenticate and Establish Session
 ·        Actor: Registered User (Student, Faculty, or Admin)
@@ -366,16 +367,7 @@ Table 13: Detailed Use Case Specifications
 ·        Error Flow: Admin attempts to ban another admin -> Server rejects with HTTP 400 Bad Request: Administrator accounts cannot be banned.
 
 
-> **[Image content — transcribed]**
 >
-> *Title in image:* "FLOWERCHART: ACADEMIC SYSTEM USER USE CASES."
->
-> Centre circle: **Education System** with three actors: **Student**, **Faculty**, **Admin**.
->
-> Petals around the centre:
-> - **Authentication** (blue): *Log In & Establish Session*, *Log Out & Invalidate Token*
-> - **Academic Operations** (green): *Enroll or Join Waitlist*, *Take Class Attendance*, *Take Class Attendance*, *Submit Student Grade*
-> - **Security & Moderation** (red): *Security & Moderation*, *Inspect Security Events*, *Force Logout All Users*
 
 **Table 13: Detailed Use Case Specifications**
 
@@ -499,18 +491,6 @@ Table 13: Detailed Use Case Specifications
 
 *Figure 1: High-Level System Architecture and Component Interactions*
 
-> **[Image content — transcribed]**
->
-> Components: **Client Browser** (React 19 + TypeScript SPA) · **Vercel Global Edge CDN** (Frontend Static Hosting) · **Render Web Service** (FastAPI ASGI Application) containing **AuthCache** (In-Memory Auth & Data Cache, FastAPI Worker Memory) · **Supabase** (PostgreSQL Database).
->
-> Numbered arrows:
-> 1. HTTPS GET Static Assets (browser → Vercel)
-> 2. Returns Compiled HTML/JS/CSS Bundle (Vercel → browser)
-> 3. REST API Requests (Authorization: Bearer JWT) (browser → Render)
-> 4. Sub-millisecond Session / Cache Lookup (Render → AuthCache)
-> 5. SQL Queries / Relational Updates (Render → Supabase)
-> 6. Returns Query Result Sets (Supabase → Render)
-> 7. JSON Response Payload (Render → browser)
 
 **Architecture Data Flow Descriptions:**
 
@@ -573,16 +553,6 @@ Table 13: Detailed Use Case Specifications
 
 
 ## *Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema*
-
-> **[Image content — transcribed]**
->
-> *Title in image:* "EDUCATIONAL PLATFORM USER, COURSE, AND ATTENDANCE MANAGEMENT SYSTEM SCHEMA"
->
-> Entity boxes shown (PK/FK/UK rows with placeholder-style field labels): **User** (appears twice), **UserSession**, **Semester**, **TokenBlacklist**, **Course**, **Enrollment**, **SecurityEvent** (appears twice), **ClassSession** (appears twice), **Attendance**.
->
-> Relationship labels on the connectors: *has active*, *generates*, *course_id*, *enrollment_id*, *teaches in*, *enrolls in*, *as classsession_id*.
->
-> *(The attribute rows inside the boxes are not readable as real column names, e.g. "faculty_id", "foooleean", "datetim"; the real schema is in Table 17.)*
 
 **Table 17: Database Schema Definitions**
 
@@ -688,36 +658,6 @@ Table 13: Detailed Use Case Specifications
 
 *Figure 4: JWT Authentication and Request Validation Sequence Flow*
 
-> **[Image content — transcribed]**
->
-> *Title in image:* "SECURE AUTHENTICATION AND AUTHORIZATION WORKFLOW"
->
-> Participants: **User Browser** · **React Frontend** · **FastAPI Backend** · **PostgreSQL Database**
->
-> **Phase 1: Initial Login**
-> 1. Enters credentials & clicks Login (User → Frontend)
-> 2. POST /auth/login (username, password) (Frontend → Backend)
-> 3. Query User by email (Backend → DB)
-> 4. User record (hash, salt, ban status) (DB → Backend)
-> - *Note:* Checks: Banned? (No) · Locked? (No) · Verify Bcrypt(password + PEPPER)
-> 6. Insert UserSession (jti, IP, client_hint)
-> 7. Insert SecurityEvent (login_success)
-> 8. JSON: {access_token, token_type, role} (Backend → Frontend)
-> 9. Store token & user in localStorage
-> 10. Redirect to Role Dashboard (Navigation)
->
-> **Subsequent Protected Request**
-> 11. Navigates to /admin/security
-> 12. GET /admin/security/stats (Header: Bearer JWT)
-> - *Note — get_current_user Dependency:* 1. Verify signature (SECRET_KEY) · 2. Check expiry (exp) · 3. Verify jti NOT in token_blacklist · 4. Verify tv >= user.token_version · 5. Check user.is_banned == False
-> - *Note — RoleChecker Dependency:* Check user.role == 'admin'
-> 15. Query security statistics (Backend → DB)
-> 16. Aggregated metric counts (DB → Backend)
-> 17. 200 OK: {total_events, active_sessions…} (Backend → Frontend)
-> 18. Render Security Center Dashboard (UI Update)
->
-> Legend: FastAPI · React Frontend · PostgreSQL. *(Step numbers in the image skip 5, 13 and 14.)*
-
 **Table 19: JWT Payload Claims Schema**
 
 | **Claim Key** | **Claim Name** | **Data Type** | **Example Value** | **Security Purpose** |
@@ -797,13 +737,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Figure 6: Multi-Cloud Production Deployment Architecture*
 
-> **[Image content — transcribed]**
->
-> **Client Access:** User Browser → 
-> **Vercel Edge Network:** `2310176-course-enroll.vercel.app` (Frontend SPA Engine) ┄ `vercel.json` (Client-side Routing Rewrites) → 
-> **Render Cloud:** `two310176-courseenroll.onrender.com` (Python ASGI Web Service) ┄ Environment Variables: SECRET_KEY, PASSWORD_PEPPER, DATABASE_URL
-> **Supabase Cloud:** PostgreSQL 16 DB (Persistent Storage) ← Render web service
-
 **Table 22: Production Environment Variables**
 
 | **Variable Name** | **Environment** | **Purpose** | **Sensitivity Level** |
@@ -847,11 +780,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** The CourseEnroll login interface demonstrating input validation, showing an active error alert when invalid credentials are submitted, and highlighting secure password masking.
 
-> **[Image content — transcribed]**
->
-> Login page "Welcome back!" (chalkboard background) with tabs **Student / Faculty / Admin** (Admin selected). Email: `rai@gmail.com`, password masked, button **Sign in as Admin**.
->
-> Red toast (top right): *Role mismatch! This account is registered as "STUDENT", not "ADMIN". Please select the student tab.*
 
 **FIGURE S2: STUDENT COURSE CATALOG & OWNERSHIP DATA ISOLATION**
 
@@ -860,11 +788,7 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Logged in as student `mila@gmail.com`, showing only her personal registrations, credit progress metrics, and course registration statuses (`Approved`, `Pending`, `Waitlisted`).
 
-> **[Image content — transcribed]**
->
-> Student **Mila Vance** (`mila@gmail.com`, STUDENT, Active). Page: **Course Catalog** — "Browse available university courses, review weekly schedules, and request registration or join the waitlist." Search box, *All Availability*, *All Credits*, counter "Catalog: 25 of 25 courses". Sidebar: Dashboard, Course Catalog, My Enrollments, Weekly Schedule, Inbox (3), Study Groups, Profile & Sessions.
->
-> Cards: **CSE472** Cloud Computing & DevOps (3 Credits, APPROVED, Tue,Thu 11:30–13:00, Lab 501, 29 / 18 Seats, "Enrolled in Schedule") · **CSE425** Software Quality & Testing (3 Credits, Waitlisted, Sun,Tue 14:30–16:00, Lab 302, 21 / 12 Seats, "In Automatic Waitlist") · **CSE485** Cybersecurity & Cryptography (3 Credits, PENDING, Sun,Tue 16:00–17:30, Lab 401, 15 / 25 Seats, "Request Pending") · **CSE499** Senior Capstone Design Project (4 Credits, "Full (4 on Waitlist)", Tue,Thu 16:00–17:30, Auditorium B, 20 / 10 Seats) · **MAT120** Calculus & Analytical Geometry (3 Credits, APPROVED, Mon,Wed 08:30–10:00, Hall 104, 13 / 45 Seats) · **MAT212** Linear Algebra (3 Credits, APPROVED, Tue,Thu 08:30–10:00, Hall 106, 10 / 40 Seats).
+
 
 **FIGURE S3: WEEKLY TIMETABLE SCHEDULE MATRIX**
 
@@ -875,17 +799,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** The visual weekly timetable grid displaying scheduled class periods across days and lecture halls with verification print action.
 
-> **[Image content — transcribed]**
->
-> Student Mila Vance, page **Weekly Schedule**. Red banner **"Schedule Time Conflict Detected!"** — "The following courses share overlapping hours on your timetable. Please adjust your registration:"
-> - MON: MAT120 (08:30 - 10:00) conflicts with CSE215 (08:30 - 10:00)
-> - WED: MAT120 (08:30 - 10:00) conflicts with CSE215 (08:30 - 10:00)
-> - TUE: MAT212 (08:30 - 10:00) conflicts with ACN201 (08:30 - 10:00)
-> - TUE: MAT212 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
-> - SUN: ACN201 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
-> - TUE: ACN201 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
->
-> Timetable grid (Time × Sunday–Thursday): 08:00 row — ACN201 Principles of Accounting (Hall 105), CSE115 Programming Language I (Lab 201), MAT120 Calculus & Analytical Geometry (Hall 104), CSE215 Programming Language II (Java) (Lab 202), MAT212 Linear Algebra (Hall 106); 10:00 row (10:00–11:30) — CSE201 Discrete Mathematics (Hall 102), CSE311 Database Management Systems (Lab 305). Conflicting cards are red; each card shows code, time, title, room and credits.
 
 **FIGURE S4: ACTIVE DEVICE SESSIONS CONSOLE**
 
@@ -896,11 +809,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Active sessions view displaying logged-in devices with IP addresses, browser user-agent hints, creation timestamps, and individual session revocation buttons.
 
-> **[Image content — transcribed]**
->
-> Student Mila Vance, page **Profile & Sessions**, section **My Login Sessions** (with *Refresh* button; *Update Password* button above). Columns: DEVICE · IP ADDRESS · LAST SEEN · STATUS · ACTION.
->
-> Rows: "Chrome on Windows" with IPs 103.127.7.152 / 127.0.0.1 / 103.81.69.232 and "Unknown Browser on Unknown OS" with IP `testclient`; last-seen dates 11/18/2026 – 11/27/2026 (e.g. 11/27/2026, 9:03:27 PM). Status badge **Active** (with **Revoke** button) or **Revoked** (no button).
 
 **FIGURE S5: FACULTY CLASS MANAGEMENT PORTAL**
 
@@ -911,14 +819,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Faculty portal for course `CSE220` showing student roster, daily roll call interface (Present/Late/Absent), live attendance percentages, and CSV export action.
 
-> **[Image content — transcribed]**
->
-> Faculty **Sayef Reyadh** (`sreyadh@gmail.com`, FACULTY). Page **My Classes** with tabs *Roster & Grading (29)*, **Session Attendance** (active), *Attendance Analytics*. Search box, counter "Students: 29 of 29".
->
-> Session selector: "10/21/2026 07:32 PM - Graph Search Algorithms: Breadth-First & Depth-First Traversals", buttons **+ New Session** and **Save Attendance**. Quick Actions: Mark All Present / Mark All Late / Mark All Absent. Summary: Total: 29 · Present: 27 · Late: 0 · Absent: 2 · Rate: 93%.
->
-> Table: STUDENT NAME · PRESENT (1.0) · LATE (0.5) · ABSENT (0.0) with radio buttons — Mila Vance, Raihanur Akter (`rai@gmail.com`), Mishu Ahmed, Kafi Hassan (all set to Present in view). *(The course code CSE220 is not visible in this crop.)*
-
 **FIGURE S6: RBAC DENIAL ENFORCEMENT**
 
 *Requirement Mappings:* `FR-RBAC-02`
@@ -928,9 +828,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Student attempting to navigate to `/admin/security`, showing immediate redirect and DevTools Network tab capturing the `HTTP 403 Forbidden` response.
 
-> **[Image content — transcribed]**
->
-> Admin User (`admin@university.edu`, ADMIN), **Security Center** (sidebar: Dashboard, Semesters, Approvals, Manage Courses, Assignments, User Management, Announcements, Security Center, Study Groups, Profile & Sessions). Audit-log rows (11/26/2026 – 11/27/2026): *Login Success*, *Failed Login (Failed attempt #1)*, *token tampered (Malformed or tampered JWT…)*, *Logout*, *Suspicious Activity (IP mismatch detected…; Automated or brute-force tok…)*; IPs `testclient` / `127.0.0.1`; user agents incl. PostmanRuntime/2.17.1; severity tags INFO / WARNING / HIGH / CRITICAL.
 
 ## D2. Security Behaviour
 
@@ -943,12 +840,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Browser DevTools Network tab showing `Authorization: Bearer <token>` header transmission and the server returning `HTTP 401 Unauthorized: Token expired`.
 
-> **[Image content — transcribed]**
->
-> Left: login page, **Student** tab, email `rai@gmail.com`, short masked password, button **Sign in as Student**.
->
-> Right: Chrome DevTools → Network (Fetch/XHR) listing events?limit=50&offset=0, stats, failed-logins-summary, logout, **login**. Selected request headers: Request URL `https://two310176-courseenroll.onrender.com/auth/login`, Request Method **POST**, Status Code **401 Unauthorized**, Remote Address 216.24.57.16:443; response headers include Access-Control-Allow-Origin `https://2310176-course-enroll.vercel.app`, Content-Type application/json, Content-Length 44, Date Fri, 27 Nov 2026 21:08:10 GMT, Server cloudflare. Footer: 7 requests, 5.4 kB transferred.
-
 **FIGURE S8: SWR CACHE & INSTANTANEOUS SESSION RECOVERY**
 
 *Requirement Mappings:* `NFR-PERF-01`
@@ -957,10 +848,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 
 **Verification Proof & Caption:** Frontend application restoring authenticated session state without visual guest flicker, verified via DevTools application storage inspection.
-
-> **[Image content — transcribed]**
->
-> Admin User, page **Profile & Sessions** → **My Login Sessions** table (DEVICE · IP ADDRESS · LAST SEEN · STATUS · ACTION): "Chrome on Windows" (103.127.7.152, 127.0.0.1) and "Unknown Browser on Unknown OS" (`testclient`, 127.0.0.1) rows dated 11/26–11/27/2026, status Active (with Revoke) or Revoked.
 
 **FIGURE S9: IMMEDIATE BANNED USER REJECTION**
 
@@ -971,9 +858,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** A student account banned by the administrator issuing an API call; the server immediately blocks the request with `HTTP 401 Account suspended: Contact administrator`.
 
-> **[Image content — transcribed]**
->
-> Login page, **Student** tab, email `rai@gmail.com`, masked password. Red toast (top right): **"Account suspended by administrator"**.
 
 ## D3. Admin Dashboard
 
@@ -986,11 +870,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Administrative control center showing total courses, registered students, active faculty, and quick-navigation control modules.
 
-> **[Image content — transcribed]**
->
-> **Admin Control Center** — "Oversee university course catalogs, manage capacities, and assign faculty instructors." Metric cards: TOTAL COURSES **25** · REGISTERED STUDENTS **35** · ACTIVE FACULTY **15** · TOTAL USERS (7D NEW) **52 (+52)** · BANNED USERS **1** · ENROLLMENTS / GROUPS **359 / 1**.
->
-> Module cards: REGISTRY — Manage Courses ("Create new course offerings, update credit hours, and remove discontinued classes.", button *Manage Catalog →*); ASSIGNMENTS — Faculty Assignment ("Assign registered faculty members to teach specific course sections.", *Manage Assignments →*); SECURITY & AUDIT — Security Center ("Track active devices, audit login events, ban malicious users, and control system sessions.", *Open Security Center →*); COMMUNICATIONS — Announcements & Alerts ("Broadcast emergency notices, registration deadlines, and messages directly to student and faculty inboxes.").
 
 **FIGURE S11: USER MANAGEMENT WITH SEARCH, ROLE FILTERS, AND STATUS TOGGLES**
 
@@ -1001,11 +880,7 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** The redesigned user management table showing live search filtering, role dropdowns (`Student`, `Faculty`, `Admin`), and active status badges.
 
-> **[Image content — transcribed]**
 >
-> **User Management** — "Manage students, faculty, and administrative accounts." Search by name or email, *All Roles*, *All Statuses*, counter "Users: 52 of 52", **Export CSV**, **+ Add User**.
->
-> Columns: SELECT · NAME · EMAIL · ROLE · STATUS · ACTIONS (Details / Edit / Ban / Remove). Rows: Mishu Ahmed (`mishu@gmail.com`, Student), Laila Noor (`laila@gmail.com`, Student), Farhan Habib (`habibf@gmail.com`, Faculty), Alex Turner (`alex@gmail.com`, Student), Sophia Chen (`sophia@gmail.com`, Student), Prof. Liam O'Connor (`loconnor@university.edu`, Faculty), Dr. Wei Zhang (`wzhang@university.edu`, Faculty) — all Active.
 
 **FIGURE S12: BAN USER MODAL DIALOG WITH MANDATORY REASON**
 
@@ -1016,9 +891,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Administrator triggering the suspension modal for a user, entering a policy violation reason, and confirming immediate session termination.
 
-> **[Image content — transcribed]**
->
-> Modal **"Ban User Account"**: red notice "Are you sure you want to suspend **Mishu Ahmed** (mishu@gmail.com)? Their active sessions will be terminated and they will be blocked from accessing the system immediately." Field SUSPENSION REASON = "u have been banned for unwanted reason". Buttons **Cancel** and **Confirm Ban**.
 
 **FIGURE S13: ADMINISTRATOR SAFETY INVARIANT ENFORCEMENT**
 
@@ -1029,13 +901,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Administrator attempting to ban a fellow admin account, showing system rejection modal: `"Administrator accounts cannot be banned"`.
 
-> **[Image content — transcribed]**
->
-> **Security Center → Overview** (tabs: Overview, Active Sessions, Security Events, User Access Control, Content Moderation). Cards: Total Events **287** · Critical (24h) **1** · Active Sessions **22** · Banned Users **1** · Failed Logins (24h) **2**.
->
-> **Danger Zone:** "Force logout all currently active sessions system-wide. Users will need to log in again." with red button **Force Logout All Users**.
->
-> Failed Logins by IP: 127.0.0.1 — 17; testclient — 10; 103.127.7.152 — 7. Failed Logins by Account: admin@university.edu 11, rai@gmail.com 6, loconnor@university.edu 3, bjackson@university.edu 2, srahman@gmail.com 1, escott@university.edu 1, awhite@university.edu 1, ajohnson@university.edu 1, mmiller@university.edu 1, psharma@university.edu 1, cat@gmail.com 1 …
 
 **FIGURE S14: PENDING ENROLLMENT APPROVALS QUEUE**
 
@@ -1046,10 +911,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Registrar queue showing pending course registration requests with one-click Approve and Reject administrative actions.
 
-> **[Image content — transcribed]**
->
-> **Enrollment Approvals** — "Review and process pending student course registrations." Search, *All Courses* filter, counter "Pending: 18 of 18". Columns STUDENT · COURSE · STATUS · ACTIONS with green **Approve** and **Reject** buttons. Rows (all Pending): Mila Vance — CSE485 Cybersecurity & Cryptography; Mila Vance — PHY108 General Physics II (Electromagnetism); Mia Wilson — CSE115 Programming Language I; Charlotte Robinson — CSE220 Data Structures & Algorithms; Cat Williams — CSE313 Compiler Design; Mishu Ahmed — CSE415 Artificial Intelligence & Heuristics; Mason Miller — CSE485 Cybersecurity & Cryptography.
-
 **FIGURE S15: SECURITY EVENTS AUDIT LOG**
 
 *Requirement Mappings:* `FR-ADM-05`
@@ -1058,9 +919,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Real-time audit log table showing recorded security events (`login_success`, `login_failed`, `token_tampered`, `user_banned`) with IP addresses and severity tags.
 
-> **[Image content — transcribed]**
->
-> **Security Center → Security Events** tab: search box, *All Severities*, counter "Events: 50 of 50", **Export CSV**, **Refresh**. Columns TIMESTAMP · EVENT TYPE · USER · IP ADDRESS · BROWSER / UA · DETAILS · SEVERITY. Rows (11/27/2026): 9:12:25 PM **User Banned** rai@gmail.com, 103.127.7.152, "Banned by admin@university…", **CRITICAL** · 9:11:54 PM Login Success rai@gmail.com (INFO) · 9:10:39 PM Login Success admin@university.edu (INFO) · 9:08:09 PM **Failed Login** rai@gmail.com "Failed attempt #1" (WARNING) · 9:08:03 PM Logout admin · 9:06:35 PM Login Success admin · 9:06:25 PM Logout mila@gmail.com · 9:05:52 PM Login Success mila@gmail.com · 9:05:41 PM Logout sreyadh@gmail.com.
 
 **FIGURE S16: SECURITY CENTER ACTIVE SESSIONS & FORCE LOGOUT ALL**
 
@@ -1071,10 +929,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Security Center showing system-wide active sessions alongside the emergency *"Force Logout All Users"* Danger Zone control.
 
-> **[Image content — transcribed]**
->
-> Cropped **Security Center → Overview**: cards Total Events 287 · Critical (24h) 1 · Active Sessions 22 · Banned Users 1 · Failed Logins (24h) 2, and the red **Danger Zone** box with button **Force Logout All Users**.
-
 **FIGURE S17: CSV EXPORT OUTPUT OPENED IN SPREADSHEET EDITOR**
 
 *Requirement Mappings:* `FR-DOMAIN-07`
@@ -1084,9 +938,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** The downloaded attendance CSV file opened in Microsoft Excel / LibreOffice showing student names, present counts, absent counts, and attendance rates.
 
-> **[Image content — transcribed]**
->
-> **User Management** page (Admin User) with a Chrome downloads popup at the top: **users_export.csv** (2,863 B • Done) and a second download "Copy of Project Submission Report Sample (PLEASE MAKE YOUR OWN COPY) (1).docx" (336 KB • 2 hours ago). Windows taskbar visible, clock 3:18 AM. *(The image shows the CSV download from User Management, not a CSV opened in a spreadsheet editor.)*
 
 ## D4. Deployment
 
@@ -1099,9 +950,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Vercel project management console showing production deployment status, custom domain `https://2310176-course-enroll.vercel.app`, and clean build logs.
 
-> **[Image content — transcribed]**
->
-> **Vercel dashboard** — project/team "Ninja Pr4o" (Hobby), page **Deployments**; filters: Author `2310176-3846`, Environment Production, Status Error. All listed deployments of **2310176-course-enroll** are **Ready**: "Complete JWT refresh, reusable RBAC, stu…" `6a16645` main (Production, 3h ago) · "docs: generate and populate official submis…" `e2510da` (Nov 24) · "docs: add comprehensive final project subm…" `d7cc086` (Nov 24) · "feat(ui): redesign search & filter system wit…" `67562db` (Nov 19) · "feat: add comprehensive search, filters, cou…" `eec8fd3` · "fix: expose is_banned in UserResponse, add…" `b827a99` · "perf: implement lightning fast in-memory au…" `72f2930` · "fix(deploy): add psycopg 3 to requirements" `73cab1a` · "docs: comprehensive README with test ac…" `d159843` · Preview builds on feature branches: "fix: announcement popup flicker, faculty att…" `6f8c1d5`, "feat(data): add automated demo database s…" `13b92c2`.
 
 **FIGURE S19: RENDER BACKEND WEB SERVICE CONFIGURATION**
 
@@ -1112,10 +960,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** Render web service dashboard showing healthy service status, continuous deployment from GitHub branch `main`, and environment variables list.
 
-> **[Image content — transcribed]**
->
-> **Render dashboard** — Web Service **2310176-CourseEnroll** (Python 3, Free). Service ID `srv-dbjqgsvb9u1s73epsbjg`; repo raihanurakter02 / 2310176-CourseEnroll, branch main, commit `6a16645`, status **Live**; URL `https://two310176-courseenroll.onrender.com`. Banner: "Your free instance will spin down with inactivity, which can delay requests by 50 seconds or more." Deploys (26 total): "Complete JWT refresh, reusable RBAC, study groups, admin moderation, CSV exports, …" `6a16645` (2h ago, Auto-Deploy, 1m 23s) · "docs: generate and populate official submission Word report (.docx) for IUB CSE309" `e2510da` (4d ago, 1m 11s, Rollback) · "docs: add comprehensive final project submission report adhering to IUB CSE309 tem…" `d7cc086` (4d ago, 1m 12s, Rollback). *(The environment-variables list is not visible in this crop.)*
-
 **FIGURE S20: INTERACTIVE SWAGGER OPENAPI DOCUMENTATION PAGE**
 
 *Requirement Mappings:* `C5`
@@ -1125,9 +969,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **Verification Proof & Caption:** The live interactive documentation at `https://two310176-courseenroll.onrender.com/docs` displaying all functional API endpoints.
 
-> **[Image content — transcribed]**
->
-> **Swagger UI** — "CourseEnroll API" **0.1.0** **OAS 3.1**, link `/openapi.json`, **Authorize** button. Group *default*: GET `/health` Health Check · POST `/auth/register` Register User · POST `/auth/login` Login · POST `/auth/refresh` Refresh Access Token · GET `/auth/me` Read Users Me · PUT `/auth/me` Update My Profile · POST `/auth/change-password` Change My Password (cut off).
 
 ## D5. Tests
 
@@ -1139,10 +980,6 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 
 **Verification Proof & Caption:** Terminal console output showing `pytest tests/test_auth_and_rbac.py` completing with 8 passed tests and 100% test coverage over security rules.
-
-> **[Image content — transcribed]**
->
-> Swagger UI, endpoint **POST /auth/refresh** after clicking Execute. Curl: `curl -X 'POST' 'https://two310176-courseenroll.onrender.com/auth/refresh' -H 'accept: */*' -H 'Content-Type: application/json' -d '{ "additionalProp1": {} }'`. Request URL `https://two310176-courseenroll.onrender.com/auth/refresh`. Server response: Code **401** (Undocumented) "Error: response status is 401", Response body `{ "detail": "Refresh token missing" }`. *(The image is a Swagger response, not a pytest terminal output.)*
 
 # Part E. Project Management and Conclusion
 
@@ -1279,7 +1116,7 @@ pytest tests/test_auth_and_rbac.py -v
 **Table 27: Study Group Collaboration Setup with Mixed Permissions**
 
 | **Member Email** | **Group Role** | **Granted Permissions** | **Forbidden Operations** |
-| --- | --- | --- | --- |
-| faculty.smith@courseenroll.edu | Owner | Full management, invite members, modify roles, delete group. | Cannot demote self if sole owner. |
-| student.doe@courseenroll.edu | Editor | Upload shared notes, create discussion posts, edit resources. | Cannot remove members or alter roles. |
-| student.jane@courseenroll.edu | Viewer | View discussions, download study materials, read group notes. | Cannot post, upload, edit, or invite. |
+|admin@university.edu --- | --- | --- | --- |
+|  | Owner | Full management, invite members, modify roles, delete group. | Cannot demote self if sole owner. |
+| mila@gmail.com | Editor | Upload shared notes, create discussion posts, edit resources. | Cannot remove members or alter roles. |
+| alex@gmail.com | Viewer | View discussions, download study materials, read group notes. | Cannot post, upload, edit, or invite. |
