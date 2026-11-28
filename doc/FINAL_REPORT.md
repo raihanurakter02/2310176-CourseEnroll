@@ -1210,11 +1210,10 @@ pytest tests/test_auth_and_rbac.py -v
 
 ## Appendix. Test Accounts and Video Demo
 
-*(Note: As required by the submission guidelines, evaluator passwords and demo account credentials are provided exclusively in the accompanying PDF submission to prevent automated credential leakage on public Git repositories).*
 
 **Video Demonstration Link:**
 
-- **Video Demo URL:** https://youtu.be/sample-courseenroll-demo *(5 to 8 minutes on live Vercel URL)*
+- **Video Demo URL:** https://youtu.be/bo9vKY592PU
 
 **Summary of Demo User Personas for Evaluators:**
 
@@ -1230,13 +1229,13 @@ pytest tests/test_auth_and_rbac.py -v
 
 | **Account Role** | **User ID / Email** | **Password** | **Permissions & Evaluation Focus** |
 | --- | --- | --- | --- |
-| Primary Administrator | admin@courseenroll.edu | Admin@12345! | Full admin access: moderation, user ban/unban, audit telemetry, data CSV export. |
-| Secondary Administrator | security_audit@courseenroll.edu | Audit@12345! | Co-admin account: verifies admin immutability rule (cannot ban or demote peer admin). |
-| Faculty Member 1 | faculty.smith@courseenroll.edu | Faculty@12345! | Instructor for CSE220: grade submission, student roster, daily roll-call attendance. |
-| Faculty Member 2 | faculty.rahman@courseenroll.edu | Faculty@12345! | Instructor for CSE307: tests ownership isolation (cannot grade CSE220 students). |
-| Student 1 (Enrolled) | student.doe@courseenroll.edu | Student@12345! | Enrolled in CSE220 & CSE307: weekly timetable, tuition breakdown, session revocation. |
-| Student 2 (Enrolled) | student.jane@courseenroll.edu | Student@12345! | Enrolled in CSE115: tests horizontal isolation (cannot see Student 1 records). |
-| Student 3 (Waitlisted) | student.alice@courseenroll.edu | Student@12345! | Tests waitlist queue placement, course capacity full condition, drop action. |
+| Primary Administrator | admin@university.edu | password123 | Full admin access: moderation, user ban/unban, audit telemetry, data CSV export. |
+| Secondary Administrator | admin2@gmail.com | string | Co-admin account: verifies admin immutability rule (cannot ban or demote peer admin). |
+| Faculty Member 1 | nsakib@gmail.com | password123 | Instructor for CSE220: grade submission, student roster, daily roll-call attendance. |
+| Faculty Member 2 | sayefreyadh@gmail.com | password123 | Instructor for CSE307: tests ownership isolation (cannot grade CSE220 students). |
+| Student 1 (Enrolled) | mila@gmail.com | password123 | Enrolled in CSE220 & CSE307: weekly timetable, tuition breakdown, session revocation. |
+| Student 2 (Enrolled) | kafi@gmail.com | password123 | Enrolled in CSE115: tests horizontal isolation (cannot see Student 1 records). |
+| Student 3 (Waitlisted) | rai@gmail.com | password123 | Tests waitlist queue placement, course capacity full condition, drop action. |
 
 **Table 27: Study Group Collaboration Setup with Mixed Permissions**
 
