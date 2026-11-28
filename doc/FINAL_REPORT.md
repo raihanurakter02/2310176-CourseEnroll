@@ -17,7 +17,7 @@
 ### Submitted By:
 * **Student Name:** Raihanur Akter  
 * **Student ID:** 2310176  
-* **Section:** 1  
+* **Section:** 06 
 * **Team Number:** Individual (Team 2310176)  
 * **Submission Date:** 25 November 2026  
 
