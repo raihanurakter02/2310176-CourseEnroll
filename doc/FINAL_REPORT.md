@@ -1,6 +1,6 @@
 <!-- Converted from 2310176_Raihanur_Akter_Project_Submission_Report__.docx. Images are in ./images. Blocks titled "[Image content — transcribed]" were added during conversion (text read from each image); everything else follows the original document. -->
 
-![Independent University, Bangladesh logo](images/iub_logo.png)
+
 
 **Independent University, Bangladesh**
 
@@ -117,10 +117,10 @@ Since the mid-term project evaluation, the application was systematically expand
 
 | **Resource** | **URL** | **Description** |
 | --- | --- | --- |
-| **Frontend Application (Vercel)** | https://2310176-course-enroll.vercel.app | Live production React frontend deployed on Vercel edge network. |
+| **Frontend Application (Vercel)** | https://2310176-course-enroll.vercel.app| Live production React frontend deployed on Vercel edge network. |
 | **Backend REST API (Render)** | https://two310176-courseenroll.onrender.com | FastAPI cloud backend service. |
-| **Interactive API Documentation** | https://two310176-courseenroll.onrender.com/docs | Live Swagger UI OpenAPI testing suite. |
-| **Alternative OpenAPI Schema** | https://two310176-courseenroll.onrender.com/redoc | ReDoc structured API reference. |
+| **Interactive API Documentation** |https://two310176-courseenroll.onrender.com/docs | Live Swagger UI OpenAPI testing suite. |
+| **Alternative OpenAPI Schema** | https://two310176-courseenroll.onrender.com/redoc| ReDoc structured API reference. |
 | **GitHub Repository** | https://github.com/raihanurakter02/2310176-CourseEnroll | Full open-source codebase with test suites and documentation. |
 | **Video Demonstration** | *Provided in PDF Appendix* | 5-to-8 minute complete end-to-end walkthrough of all roles. |
 
@@ -343,10 +343,28 @@ This Software Requirements Specification (SRS) establishes the complete function
 | **SAFE-05** | Global emergency logout invalidates all user tokens immediately. | HTTP 401: Session revoked (global logout) |
 
 ## B5. Use Cases
+<img width="975" height="531" alt="image" src="https://github.com/user-attachments/assets/9014b4e1-64ca-4454-95fa-d2601bc72721" />
 
-![Figure 2: System Use Case Model across User Actors](images/fig2_use_case_flowchart.png)
 
 *Figure 2: System Use Case Model across User Actors*
+Table 13: Detailed Use Case Specifications
+·        Use Case UC-01: Authenticate and Establish Session
+·        Actor: Registered User (Student, Faculty, or Admin)
+·        Preconditions: User has registered account and is not banned.
+·        Main Flow: User submits email and password -> Server validates Bcrypt hash + Pepper -> Server records user_sessions entry -> Server generates signed JWT containing jti -> React client saves token in localStorage -> Client redirects to role dashboard.
+·        Alternative Flow: Invalid password -> Server increments login_attempts and writes login_failed security event -> Returns 401 Unauthorized.
+·        Lockout Flow: 5th consecutive failure -> Server sets locked_until = now + 30m -> Returns 403 Forbidden.
+·        Use Case UC-03: Course Registration with Automatic Waitlisting
+·        Actor: Authenticated Student
+·        Preconditions: Active semester, course exists, student not currently enrolled.
+·        Main Flow: Student clicks "Request Enrollment" -> Server checks capacity -> If seats available, creates Enrollment(status='pending') -> Returns 200 OK.
+·        Capacity Flow: Course capacity reached -> Server creates Enrollment(status='waitlisted') -> Returns notification of waitlist placement.
+·        Use Case UC-06: Administrative User Ban & Immediate Session Invalidation
+·        Actor: Authenticated Administrator
+·        Preconditions: Admin logged in; target user is not an administrator.
+·        Main Flow: Admin opens User Management -> Clicks "Ban User" -> Enters suspension reason -> Submits -> Server validates target role != 'admin' -> Sets target.is_banned = True -> Sets all active user_sessions for target to is_active = False -> Blacklists jti tokens -> Invalidates auth cache -> Writes user_banned event -> Returns 200 OK.
+·        Error Flow: Admin attempts to ban another admin -> Server rejects with HTTP 400 Bad Request: Administrator accounts cannot be banned.
+
 
 > **[Image content — transcribed]**
 >
@@ -476,7 +494,8 @@ This Software Requirements Specification (SRS) establishes the complete function
 
 ## C2. System Architecture
 
-![Figure 1: High-Level System Architecture and Component Interactions](images/fig1_system_architecture.png)
+<img width="886" height="483" alt="image" src="https://github.com/user-attachments/assets/266a7aef-0f41-4166-a5ce-8844765709c2" />
+
 
 *Figure 1: High-Level System Architecture and Component Interactions*
 
@@ -550,7 +569,8 @@ This Software Requirements Specification (SRS) establishes the complete function
 
 ## C4. Data Model
 
-![Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema](images/fig3_er_schema.png)
+<img width="975" height="531" alt="image" src="https://github.com/user-attachments/assets/59fef19c-3ead-46ef-8979-9cf0742aa8e9" />
+
 
 ## *Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema*
 
@@ -664,7 +684,7 @@ This Software Requirements Specification (SRS) establishes the complete function
 
 ## C6. JWT Authentication Design
 
-![Figure 4: JWT Authentication and Request Validation Sequence Flow](images/fig4_auth_workflow.png)
+<img width="975" height="531" alt="image" src="https://github.com/user-attachments/assets/17ace4c7-d27a-471b-bb87-599bf5c0d035" />
 
 *Figure 4: JWT Authentication and Request Validation Sequence Flow*
 
@@ -772,7 +792,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 ## C10. Deployment on Vercel & Render
 
-![Figure 6: Multi-Cloud Production Deployment Architecture](images/fig6_deployment_architecture.png)
+<img width="886" height="483" alt="image" src="https://github.com/user-attachments/assets/88f6c8fb-b730-4e35-a6d5-da9bb75125cf" />
+
 
 *Figure 6: Multi-Cloud Production Deployment Architecture*
 
@@ -821,7 +842,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-AUTH-03`, `FR-AUTH-06`
 
-![Figure S1](images/S01_login_validation.png)
+<img width="889" height="417" alt="image" src="https://github.com/user-attachments/assets/eebd842f-1594-484a-bbbe-aefebd1a09a7" />
+
 
 **Verification Proof & Caption:** The CourseEnroll login interface demonstrating input validation, showing an active error alert when invalid credentials are submitted, and highlighting secure password masking.
 
@@ -833,9 +855,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 **FIGURE S2: STUDENT COURSE CATALOG & OWNERSHIP DATA ISOLATION**
 
-*Requirement Mappings:* `FR-DOMAIN-01`, `FR-RBAC-03`
+<img width="889" height="427" alt="image" src="https://github.com/user-attachments/assets/c0aba807-96f5-49e8-86a3-bee6fb2fe43f" />
 
-![Figure S2](images/S02_student_course_catalog.png)
 
 **Verification Proof & Caption:** Logged in as student `mila@gmail.com`, showing only her personal registrations, credit progress metrics, and course registration statuses (`Approved`, `Pending`, `Waitlisted`).
 
@@ -849,7 +870,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-DOMAIN-04`
 
-![Figure S3](images/S03_weekly_timetable.png)
+<img width="889" height="431" alt="image" src="https://github.com/user-attachments/assets/793f41e2-b289-4715-89ef-6450e69850d5" />
+
 
 **Verification Proof & Caption:** The visual weekly timetable grid displaying scheduled class periods across days and lecture halls with verification print action.
 
@@ -869,7 +891,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-AUTH-07`, `FR-ADM-06`
 
-![Figure S4](images/S04_active_device_sessions.png)
+<img width="889" height="427" alt="image" src="https://github.com/user-attachments/assets/2e48d0c2-f588-4e49-a680-7407aa1e94cd" />
+
 
 **Verification Proof & Caption:** Active sessions view displaying logged-in devices with IP addresses, browser user-agent hints, creation timestamps, and individual session revocation buttons.
 
@@ -883,7 +906,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-DOMAIN-06`, `FR-DOMAIN-07`
 
-![Figure S5](images/S05_faculty_attendance_portal.png)
+<img width="889" height="421" alt="image" src="https://github.com/user-attachments/assets/9818f2db-5cc5-465d-beee-f40faac56f5e" />
+
 
 **Verification Proof & Caption:** Faculty portal for course `CSE220` showing student roster, daily roll call interface (Present/Late/Absent), live attendance percentages, and CSV export action.
 
@@ -899,7 +923,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-RBAC-02`
 
-![Figure S6](images/S06_rbac_denial.png)
+<img width="889" height="419" alt="image" src="https://github.com/user-attachments/assets/724327a8-d661-440c-97ce-53d62264e0a4" />
+
 
 **Verification Proof & Caption:** Student attempting to navigate to `/admin/security`, showing immediate redirect and DevTools Network tab capturing the `HTTP 403 Forbidden` response.
 
@@ -913,7 +938,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-AUTH-09`
 
-![Figure S7](images/S07_bearer_token_401.png)
+<img width="889" height="423" alt="image" src="https://github.com/user-attachments/assets/821cf951-b59a-4a84-b61d-67c68f036bd8" />
+
 
 **Verification Proof & Caption:** Browser DevTools Network tab showing `Authorization: Bearer <token>` header transmission and the server returning `HTTP 401 Unauthorized: Token expired`.
 
@@ -927,7 +953,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `NFR-PERF-01`
 
-![Figure S8](images/S08_swr_cache_session.png)
+<img width="889" height="404" alt="image" src="https://github.com/user-attachments/assets/1049f2ce-bc6a-46a3-96ab-f5f64387a921" />
+
 
 **Verification Proof & Caption:** Frontend application restoring authenticated session state without visual guest flicker, verified via DevTools application storage inspection.
 
@@ -939,7 +966,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-RBAC-07`
 
-![Figure S9](images/S09_banned_user_rejection.png)
+<img width="889" height="421" alt="image" src="https://github.com/user-attachments/assets/be04a5a9-8b17-4b1b-bd3e-417617fff1b4" />
+
 
 **Verification Proof & Caption:** A student account banned by the administrator issuing an API call; the server immediately blocks the request with `HTTP 401 Account suspended: Contact administrator`.
 
@@ -953,7 +981,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-ADM-01`
 
-![Figure S10](images/S10_admin_dashboard_overview.png)
+<img width="889" height="421" alt="image" src="https://github.com/user-attachments/assets/533a2f20-518e-4236-9d1f-224557ce5623" />
+
 
 **Verification Proof & Caption:** Administrative control center showing total courses, registered students, active faculty, and quick-navigation control modules.
 
@@ -967,7 +996,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-ADM-02`
 
-![Figure S11](images/S11_user_management.png)
+<img width="889" height="417" alt="image" src="https://github.com/user-attachments/assets/85a50e16-b937-4b65-a624-62b316090332" />
+
 
 **Verification Proof & Caption:** The redesigned user management table showing live search filtering, role dropdowns (`Student`, `Faculty`, `Admin`), and active status badges.
 
@@ -981,7 +1011,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-ADM-03`
 
-![Figure S12](images/S12_ban_user_modal.png)
+<img width="889" height="438" alt="image" src="https://github.com/user-attachments/assets/00e40e52-aa1d-447d-8689-75877859c334" />
+
 
 **Verification Proof & Caption:** Administrator triggering the suspension modal for a user, entering a policy violation reason, and confirming immediate session termination.
 
@@ -993,7 +1024,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-RBAC-05`
 
-![Figure S13](images/S13_admin_safety_invariant.png)
+<img width="889" height="423" alt="image" src="https://github.com/user-attachments/assets/1410d460-0274-4145-8e48-2bb7fc1154da" />
+
 
 **Verification Proof & Caption:** Administrator attempting to ban a fellow admin account, showing system rejection modal: `"Administrator accounts cannot be banned"`.
 
@@ -1009,7 +1041,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-ADM-09`
 
-![Figure S14](images/S14_pending_enrollment_approvals.png)
+<img width="889" height="417" alt="image" src="https://github.com/user-attachments/assets/bccf8d2a-939c-4c24-9994-39f7534fd6c1" />
+
 
 **Verification Proof & Caption:** Registrar queue showing pending course registration requests with one-click Approve and Reject administrative actions.
 
@@ -1020,8 +1053,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 **FIGURE S15: SECURITY EVENTS AUDIT LOG**
 
 *Requirement Mappings:* `FR-ADM-05`
+<img width="889" height="421" alt="image" src="https://github.com/user-attachments/assets/1b6ebb83-e7e0-44d3-be0b-e5166a535053" />
 
-![Figure S15](images/S15_security_events_audit_log.png)
 
 **Verification Proof & Caption:** Real-time audit log table showing recorded security events (`login_success`, `login_failed`, `token_tampered`, `user_banned`) with IP addresses and severity tags.
 
@@ -1033,7 +1066,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-AUTH-10`, `FR-ADM-07`
 
-![Figure S16](images/S16_security_center_force_logout.png)
+<img width="889" height="265" alt="image" src="https://github.com/user-attachments/assets/6e09ebdc-6e43-490d-a6a1-9b9e5a2fd331" />
+
 
 **Verification Proof & Caption:** Security Center showing system-wide active sessions alongside the emergency *"Force Logout All Users"* Danger Zone control.
 
@@ -1045,7 +1079,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `FR-DOMAIN-07`
 
-![Figure S17](images/S17_csv_export_output.png)
+<img width="889" height="438" alt="image" src="https://github.com/user-attachments/assets/69389e70-b189-4bb9-a528-af4a597740fd" />
+
 
 **Verification Proof & Caption:** The downloaded attendance CSV file opened in Microsoft Excel / LibreOffice showing student names, present counts, absent counts, and attendance rates.
 
@@ -1059,7 +1094,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `C10`
 
-![Figure S18](images/S18_vercel_deployment.png)
+<img width="889" height="415" alt="image" src="https://github.com/user-attachments/assets/8c24f5a8-760b-45a4-a505-146d535a7c1c" />
+
 
 **Verification Proof & Caption:** Vercel project management console showing production deployment status, custom domain `https://2310176-course-enroll.vercel.app`, and clean build logs.
 
@@ -1071,7 +1107,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `C10`
 
-![Figure S19](images/S19_render_service.png)
+<img width="889" height="400" alt="image" src="https://github.com/user-attachments/assets/aab395ee-3b9a-40e2-9138-41c5d2972336" />
+
 
 **Verification Proof & Caption:** Render web service dashboard showing healthy service status, continuous deployment from GitHub branch `main`, and environment variables list.
 
@@ -1083,7 +1120,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `C5`
 
-![Figure S20](images/S20_swagger_openapi.png)
+<img width="889" height="402" alt="image" src="https://github.com/user-attachments/assets/e8ed01f3-e38e-4532-ab0c-f84be575b129" />
+
 
 **Verification Proof & Caption:** The live interactive documentation at `https://two310176-courseenroll.onrender.com/docs` displaying all functional API endpoints.
 
@@ -1097,7 +1135,8 @@ allow_student_only = RoleChecker([models.UserRole.student])
 
 *Requirement Mappings:* `C11`
 
-![Figure S21](images/S21_pytest_execution.png)
+<img width="889" height="408" alt="image" src="https://github.com/user-attachments/assets/7be26ff6-e3d8-41bd-917d-16a9318cff9d" />
+
 
 **Verification Proof & Caption:** Terminal console output showing `pytest tests/test_auth_and_rbac.py` completing with 8 passed tests and 100% test coverage over security rules.
 
