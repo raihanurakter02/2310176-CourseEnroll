@@ -961,7 +961,7 @@ pytest tests/test_auth_and_rbac.py -v
 *(Note: As required by the submission guidelines, evaluator passwords and demo account credentials are provided exclusively in the accompanying PDF submission to prevent automated credential leakage on public Git repositories).*
 
 ### Video Demonstration Link:
-* **Video Demo URL:** `https://youtu.be/sample-courseenroll-demo` *(5 to 8 minutes on live Vercel URL)*
+* **Video Demo URL:** `https://youtu.be/bo9vKY592PU
 
 ### Summary of Demo User Personas for Evaluators:
 1. **Primary Administrator:** Full administrative rights, Security Center access, User ban/unban moderation, Enrollment approvals queue.
