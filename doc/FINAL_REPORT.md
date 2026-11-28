@@ -1,194 +1,199 @@
-# Independent University, Bangladesh
-## Department of Computer Science & Engineering
-### CSE309: Web Application & Internet — Autumn 2026
+<!-- Converted from 2310176_Raihanur_Akter_Project_Submission_Report__.docx. Images are in ./images. Blocks titled "[Image content — transcribed]" were added during conversion (text read from each image); everything else follows the original document. -->
 
----
+![Independent University, Bangladesh logo](images/iub_logo.png)
 
-# FINAL PROJECT SUBMISSION REPORT
+**Independent University, Bangladesh**
 
-**Project Title:** CourseEnroll — Secure Multi-User University Course Registration & Academic Administration Platform  
-**Live Application (Vercel):** [https://2310176-course-enroll.vercel.app](https://2310176-course-enroll.vercel.app)  
-**Backend API (Render):** [https://two310176-courseenroll.onrender.com](https://two310176-courseenroll.onrender.com)  
-**Interactive API Documentation (Swagger):** [https://two310176-courseenroll.onrender.com/docs](https://two310176-courseenroll.onrender.com/docs)  
-**GitHub Repository:** [https://github.com/raihanurakter02/2310176-CourseEnroll](https://github.com/raihanurakter02/2310176-CourseEnroll)  
+**CSE309 Web Application & Internet**
 
----
+**Final Project Submission Report**
 
-### Submitted By:
-* **Student Name:** Raihanur Akter  
-* **Student ID:** 2310176  
-* **Section:** 06 
-* **Team Number:** Individual (Team 2310176)  
-* **Submission Date:** 28 November 2026  
+Submitted by: Raihanur Akter
 
-### Submitted To:
-* **Instructor:** Sayef Reyadh  
-* **Designation:** Adjunct Lecturer  
-* **Department:** Computer Science & Engineering  
-* **Institution:** Independent University, Bangladesh (IUB)  
+**Name**: Raihanur Akter
 
----
+**Student ID**: 2310176
 
-## Table of Contents
+**Section**: 06
 
-- [1. Executive Summary](#1-executive-summary)
-  - [1.1 Project Overview](#11-project-overview)
-  - [1.2 What Was Built Since the Mid Assessment](#12-what-was-built-since-the-mid-assessment)
-  - [1.3 Live Links](#13-live-links)
-- [Part A. Product Requirements (PRD)](#part-a-product-requirements-prd)
-  - [A1. Problem Statement](#a1-problem-statement)
-  - [A2. Users and Roles](#a2-users-and-roles)
-  - [A3. Goals and Success Measures](#a3-goals-and-success-measures)
-  - [A4. Scope and Non-Goals](#a4-scope-and-non-goals)
-  - [A5. User Stories](#a5-user-stories)
-- [Part B. Software Requirements (SRS)](#part-b-software-requirements-srs)
-  - [B1. Introduction & Definitions](#b1-introduction--definitions)
-  - [B2. Functional Requirements](#b2-functional-requirements)
-  - [B3. Non-Functional Requirements](#b3-non-functional-requirements)
-  - [B4. Roles and Permission Matrix](#b4-roles-and-permission-matrix)
-  - [B5. Use Cases](#b5-use-cases)
-  - [B6. Acceptance Criteria](#b6-acceptance-criteria)
-  - [B7. Traceability Matrix](#b7-traceability-matrix)
-- [Part C. Technical Design (TDD)](#part-c-technical-design-tdd)
-  - [C1. Technology Stack](#c1-technology-stack)
-  - [C2. System Architecture](#c2-system-architecture)
-  - [C3. Backend and Frontend Structure](#c3-backend-and-frontend-structure)
-  - [C4. Data Model (ER Diagram & Schemas)](#c4-data-model)
-  - [C5. API Design](#c5-api-design)
-  - [C6. JWT Authentication Design](#c6-jwt-authentication-design)
-  - [C7. RBAC Design](#c7-rbac-design)
-  - [C8. Admin Dashboard Design](#c8-admin-dashboard-design)
-  - [C9. Security Design and Threats](#c9-security-design-and-threats)
-  - [C10. Deployment on Vercel & Render](#c10-deployment-on-vercel--render)
-  - [C11. Automated Testing](#c11-automated-testing)
-- [Part D. Evidence: Screenshots of Running Application](#part-d-evidence-screenshots-of-running-application)
-- [Part E. Project Management and Conclusion](#part-e-project-management-and-conclusion)
-  - [E1. How to Run and Test](#e1-how-to-run-and-test)
-  - [E2. GitHub Work (Issues & Pull Requests)](#e2-github-work)
-  - [E3. Limitations](#e3-limitations)
-  - [E4. Future Work](#e4-future-work)
-  - [E5. Sources, Libraries and Tools](#e5-sources-libraries-and-tools)
-- [Appendix. Test Accounts and Video Demo](#appendix-test-accounts-and-video-demo)
+**Team Number**: N/A
 
----
+**Project Title**: Course Enroll
 
-## List of Figures & Tables
+**Vercel URL**: https://2310176-course-enroll.vercel.app/
 
-* **Figure 1:** System Architecture and Data Flow
-* **Figure 2:** Use Case Diagram
-* **Figure 3:** Entity-Relationship (ER) Diagram
-* **Figure 4:** JWT Authentication & Session Lifecycle (Sequence Diagram)
-* **Figure 5:** Request Authorization & Reusable RBAC Flow
-* **Figure 6:** Cloud Deployment Architecture
-* **Table 1:** System URLs and Live Deployments
-* **Table 2:** User Personas and Role Boundaries
-* **Table 3:** Core Goals and Measurable Success Criteria
-* **Table 4:** Product User Stories
-* **Table 5:** Functional Requirements — Authentication (`FR-AUTH`)
-* **Table 6:** Functional Requirements — Role-Based Access Control (`FR-RBAC`)
-* **Table 7:** Functional Requirements — Administration & Moderation (`FR-ADM`)
-* **Table 8:** Functional Requirements — Academic Resource Domain (`FR-DOMAIN`)
-* **Table 9:** Non-Functional Requirements
-* **Table 10:** Endpoint Authorization Matrix by Role
-* **Table 11:** Course Section & Shared Resource Permission Matrix
-* **Table 12:** System Invariant Safety Rules
-* **Table 13:** Detailed Use Case Specifications
-* **Table 14:** Gherkin Acceptance Criteria
-* **Table 15:** Comprehensive Traceability Matrix
-* **Table 16:** Production Technology Stack
-* **Table 17:** Database Schema Definitions
-* **Table 18:** REST API Endpoints Specification
-* **Table 19:** JWT Payload Claims Schema
-* **Table 20:** Admin Portal Management Views
-* **Table 21:** STRIDE Threat Analysis and Security Defenses
-* **Table 22:** Production Environment Variables
-* **Table 23:** Automated Pytest Test Results
-* **Table 24:** GitHub Milestone Issues and Pull Requests
-* **Table 25:** External Dependencies, Libraries, and Tools
+**GitHub Repository**: https://github.com/raihanurakter02/2310176-CourseEnroll.git
 
----
+**Submitted To**:
+
+**Sayef Reyadh**
+
+Adjunct Lecturer
+
+Department of Computer Science & Engineering
+
+Independent University, Bangladesh
+
+Semester: Autumn 2026
+
+Date of Submission: 28/11/2026
+
+**Table of Contents**
+
+```text
+1. Executive Summary ...................................................... 1
+   1.1 Project Overview ................................................... 1
+   1.2 What Was Built Since the Mid Assessment ............................ 1
+   1.3 Live Links (Table 1) ............................................... 2
+Part A. Product Requirements (PRD) ........................................ 3
+   A1. Problem Statement .................................................. 3
+   A2. Users and Roles (Table 2) .......................................... 3
+   A3. Goals and Success Measures (Table 3) ............................... 4
+   A4. Scope and Non-Goals ................................................ 4
+   A5. User Stories (Table 4: US-01 to US-12) ............................. 5
+Part B. Software Requirements (SRS) ....................................... 6
+   B1. Introduction & Definitions ......................................... 6
+   B2. Functional Requirements (Tables 5 to 8) ............................ 7
+   B3. Non-Functional Requirements (Table 9) .............................. 8
+   B4. Roles and Permission Matrix (Tables 10 to 12) ...................... 9
+   B5. Use Cases (Table 13 & Sequence Workflows) ......................... 11
+   B6. Acceptance Criteria (Table 14: AC-01 to AC-04) .................... 12
+   B7. Requirements Traceability Matrix (Table 15) ....................... 13
+Part C. Technical Design (TDD) ........................................... 14
+   C1. Technology Stack (Table 16) ....................................... 14
+   C2. System Architecture & Component Interactions ...................... 15
+   C3. Codebase Structure & Directory Responsibilities ................... 16
+   C4. Data Model & Database Schema Dictionary (Table 17) ................ 17
+   C5. API Design & Endpoint Specification (Table 18) .................... 18
+   C6. Authentication & JWT Design (Table 19) ............................ 20
+   C7. RBAC Design & Authorization Flow .................................. 21
+   C8. Admin Dashboard Design (Table 20) ................................. 22
+   C9. Security Design & STRIDE Threat Model (Table 21) .................. 23
+   C10. Deployment Topology & Environment Variables (Table 22) ........... 24
+   C11. Testing Strategy & Automated Test Suite (Table 23) ............... 25
+Part D. Evidence: Screenshots of the Running Application ................. 26
+   D1. User Side (Figures S1 to S6) ...................................... 26
+   D2. Security Behaviour (Figures S7 to S9) ............................. 28
+   D3. Admin Dashboard (Figures S10 to S17) .............................. 29
+   D4. Deployment Evidence (Figures S18 to S20) .......................... 32
+   D5. Automated Test Execution Evidence (Figure S21) .................... 33
+Part E. Project Management and Conclusion ................................ 34
+   E1. How to Run and Test Locally ....................................... 34
+   E2. GitHub Work & Feature Breakdown (Table 24) ........................ 35
+   E3. Known Limitations & Technical Constraints ......................... 36
+   E4. Future Work Roadmap ............................................... 36
+   E5. Sources, Libraries, and AI Usage Disclosure (Table 25) ............ 37
+Appendix. Test Accounts and Video Demo ................................... 38
+   Evaluator Demo Accounts (Table 26) .................................... 38
+   Group Collaboration Test Setup (Table 27) ............................. 38
+   Video Walkthrough Details ............................................. 38
+```
 
 # 1. Executive Summary
 
-### 1.1 Project Overview
+## 1.1 Project Overview
+
 **CourseEnroll** is a production-ready, cloud-deployed university course registration and academic Enterprise Resource Planning (ERP) platform. Designed for modern higher education workflows, the system bridges students, faculty, and university administrators into a cohesive, secure environment. Students can explore interactive course catalogs, register for sections with real-time seat availability, enter automated FIFO waitlists when sections fill to capacity, inspect weekly timetable matrices, and track semester attendance records. Faculty members can oversee enrolled student rosters, schedule class sessions, record daily attendance with percentage indicators, and evaluate final grades within university-defined grading windows. Administrators manage the overarching institution via an integrated Admin Control Center featuring user management, course section assignments, enrollment approvals, broadcast announcements, academic timeline controls, and an Enterprise Security Center with active session tracking, token blacklisting, and security event audit logs.
 
 **Architecture Stack:** Single Page Application (SPA) built with **React 19 with TypeScript** and Vite deployed on **Vercel**, communicating via RESTful APIs with a high-performance **FastAPI (Python 3.14)** backend deployed on **Render**, backed by a cloud-hosted **PostgreSQL (Supabase)** relational database.
 
-### 1.2 What Was Built Since the Mid Assessment
+## 1.2 What Was Built Since the Mid Assessment
+
 Since the mid-term project evaluation, the application was systematically expanded from a single-user prototype into a hardened multi-user enterprise platform:
-1. **JWT Authentication with Session Control:** Implemented stateless yet revocable JSON Web Tokens (HS256) with unique JWT IDs (`jti`), server-side password hashing using **Bcrypt** and an environment-isolated **Server Pepper**, automatic 5-attempt brute-force lockout, and active device tracking.
-2. **Role-Based Access Control (RBAC):** Built a centralized, reusable server-side authorization dependency (`RoleChecker`) enforcing strict role privileges (`student`, `faculty`, `admin`), object-level ownership checks (students cannot inspect or drop other students' enrollments), and administrative safety invariants.
-3. **Admin Security Center & Audit Logging:** Engineered an enterprise security console featuring real-time active session monitoring with remote session revocation, an emergency system-wide killswitch (*Force Logout All Users* via token versioning), live security audit logging (`security_events`), and ban/unban moderation with mandatory reason tracking.
+
+1. **JWT Authentication with Session Control:** Implemented stateless yet revocable JSON Web Tokens (HS256) with unique JWT IDs (jti), server-side password hashing using **Bcrypt** and an environment-isolated **Server Pepper**, automatic 5-attempt brute-force lockout, and active device tracking.
+
+2. **Role-Based Access Control (RBAC):** Built a centralized, reusable server-side authorization dependency (RoleChecker) enforcing strict role privileges (student, faculty, admin), object-level ownership checks (students cannot inspect or drop other students' enrollments), and administrative safety invariants.
+
+3. **Admin Security Center & Audit Logging:** Engineered an enterprise security console featuring real-time active session monitoring with remote session revocation, an emergency system-wide killswitch (*Force Logout All Users* via token versioning), live security audit logging (security_events), and ban/unban moderation with mandatory reason tracking.
+
 4. **Academic Domain Enhancements:** Implemented automated FIFO waitlist promotion upon seat drop, faculty session attendance tracking with cumulative rate analytics, CSV report generation, university announcement broadcasting with unread status tracking, and academic semester timeline controls.
+
 5. **High-Performance Caching & UI Polish:** Integrated an in-memory auth session cache on the backend (eliminating repetitive database queries) and a Stale-While-Revalidate (SWR) multi-tier caching engine on the frontend, accompanied by an enterprise-grade search and filter toolbar design system across all management tables.
 
-### 1.3 Live Links
+## 1.3 Live Links
 
-#### Table 1: System URLs and Live Deployments
-| Resource | URL | Description |
-| :--- | :--- | :--- |
-| **Frontend Application (Vercel)** | [https://2310176-course-enroll.vercel.app](https://2310176-course-enroll.vercel.app) | Live production React frontend deployed on Vercel edge network. |
-| **Backend REST API (Render)** | [https://two310176-courseenroll.onrender.com](https://two310176-courseenroll.onrender.com) | FastAPI cloud backend service. |
-| **Interactive API Documentation** | [https://two310176-courseenroll.onrender.com/docs](https://two310176-courseenroll.onrender.com/docs) | Live Swagger UI OpenAPI testing suite. |
-| **Alternative OpenAPI Schema** | [https://two310176-courseenroll.onrender.com/redoc](https://two310176-courseenroll.onrender.com/redoc) | ReDoc structured API reference. |
-| **GitHub Repository** | [https://github.com/raihanurakter02/2310176-CourseEnroll](https://github.com/raihanurakter02/2310176-CourseEnroll) | Full open-source codebase with test suites and documentation. |
+**Table 1: System URLs and Live Deployments**
+
+| **Resource** | **URL** | **Description** |
+| --- | --- | --- |
+| **Frontend Application (Vercel)** | https://2310176-course-enroll.vercel.app | Live production React frontend deployed on Vercel edge network. |
+| **Backend REST API (Render)** | https://two310176-courseenroll.onrender.com | FastAPI cloud backend service. |
+| **Interactive API Documentation** | https://two310176-courseenroll.onrender.com/docs | Live Swagger UI OpenAPI testing suite. |
+| **Alternative OpenAPI Schema** | https://two310176-courseenroll.onrender.com/redoc | ReDoc structured API reference. |
+| **GitHub Repository** | https://github.com/raihanurakter02/2310176-CourseEnroll | Full open-source codebase with test suites and documentation. |
 | **Video Demonstration** | *Provided in PDF Appendix* | 5-to-8 minute complete end-to-end walkthrough of all roles. |
 
 *(Note: In accordance with security guidelines, evaluator demo account credentials are excluded from the public repository and documented exclusively in the PDF Appendix).*
 
----
-
 # Part A. Product Requirements (PRD)
 
-### A1. Problem Statement
-Traditional university course enrollment systems often suffer from critical operational and security deficiencies. Students frequently experience chaotic registration windows plagued by unhandled seat over-subscriptions, a lack of transparency regarding waitlist positioning, and an inability to visualize schedule collisions in real time. Faculty instructors are forced to manage student attendance and submit course grades across disconnected spreadsheets, increasing the risk of data desynchronization and unmonitored grade alterations outside approved academic windows. 
+## A1. Problem Statement
+
+Traditional university course enrollment systems often suffer from critical operational and security deficiencies. Students frequently experience chaotic registration windows plagued by unhandled seat over-subscriptions, a lack of transparency regarding waitlist positioning, and an inability to visualize schedule collisions in real time. Faculty instructors are forced to manage student attendance and submit course grades across disconnected spreadsheets, increasing the risk of data desynchronization and unmonitored grade alterations outside approved academic windows.
 
 From an institutional security standpoint, legacy university portals often store credentials with weak hashing mechanisms, lack centralized Role-Based Access Control, and provide zero administrative visibility into concurrent user logins, active devices, or credential-stuffing attacks. If an account is compromised or a student leaves the university, administrators have no mechanism to invalidate active access tokens or trace malicious activities. CourseEnroll resolves these institutional pain points by providing an integrated, secure, and audited course enrollment platform.
 
-### A2. Users and Roles
+## A2. Users and Roles
 
-#### Table 2: User Personas and Role Boundaries
-| Role | Persona & Description | Primary Tasks & Capabilities | Strict System Boundaries (Must Never Do) |
-| :--- | :--- | :--- | :--- |
+**Table 2: User Personas and Role Boundaries**
+
+| **Role** | **Persona & Description** | **Primary Tasks & Capabilities** | **Strict System Boundaries (Must Never Do)** |
+| --- | --- | --- | --- |
 | **Visitor** | Unauthenticated user accessing the domain. | View landing page, navigate to login/registration forms, inspect public documentation. | Cannot view course rosters, student schedules, admin controls, or trigger mutations. |
 | **Student** | Registered learner enrolled in university degree programs. | Browse course catalog, filter by seat availability, submit enrollment requests, join waitlists, drop classes, view personal weekly timetable matrix, review attendance stats, read announcements. | Must never access admin consoles, approve registrations, modify course limits, view other students' records, enter grades, or ban users. |
 | **Faculty** | Academic instructor assigned to teach specific course sections. | Inspect assigned class sections, view enrolled student rosters, schedule lectures, take roll call (Present/Late/Absent), export CSV attendance reports, submit final grades during open grading periods. | Must never modify university course capacities, delete courses, alter system user roles, access security logs, or alter classes taught by other faculty. |
 | **Admin** | University registrar, department chair, or IT security officer. | Manage user accounts, ban/unban violators with logged reasons, assign faculty to courses, approve/reject pending registrations, broadcast campus notices, define semester timelines, inspect active device sessions, execute emergency force logouts, inspect security audit logs. | Must never change their own role away from admin, ban another administrator account, or delete their own active admin account. |
 
-### A3. Goals and Success Measures
+## A3. Goals and Success Measures
 
-#### Table 3: Core Goals and Measurable Success Criteria
-| Goal ID | Strategic Goal | Measurable Success Metric |
-| :--- | :--- | :--- |
+**Table 3: Core Goals and Measurable Success Criteria**
+
+| **Goal ID** | **Strategic Goal** | **Measurable Success Metric** |
+| --- | --- | --- |
 | **G-01** | **Strict Identity & Password Security** | Passwords hashed using Bcrypt + Environment Pepper with 0 plain-text storage; 5 consecutive failed logins trigger 30-minute lockout. |
-| **G-02** | **Cryptographic Session Control** | Every JWT access token verified on every protected request with `jti` session blacklisting; token revocation takes effect on the next request ($< 1$ second). |
-| **G-03** | **Zero Cross-User Data Leakage** | 100% of user data endpoints enforce ownership filtering in database queries; accessing foreign records returns `403 Forbidden` or `404 Not Found`. |
+| **G-02** | **Cryptographic Session Control** | Every JWT access token verified on every protected request with jti session blacklisting; token revocation takes effect on the next request (<1 second). |
+| **G-03** | **Zero Cross-User Data Leakage** | 100% of user data endpoints enforce ownership filtering in database queries; accessing foreign records returns 403 Forbidden or 404 Not Found. |
 | **G-04** | **Safety Invariant Enforcement** | 100% rejection rate when an admin attempts to ban another admin or demote their own account. |
 | **G-05** | **Automated Capacity & Waitlist Integrity** | Immediate FIFO promotion of the top waitlisted student when an enrolled student drops an at-capacity course section. |
 | **G-06** | **High-Throughput Responsiveness** | In-memory authentication and query caching ensures sub-50ms endpoint response times under regular operation. |
 
-### A4. Scope and Non-Goals
-* **In Scope:**
-  * JWT-based authentication with bcrypt password hashing and environment-variable pepper.
-  * Reusable, server-enforced Role-Based Access Control (RBAC) across Students, Faculty, and Administrators.
-  * Ownership-based data isolation across enrollments, grading, and course management.
-  * Enterprise Security Center: User session tracking, remote session revocation, force-logout killswitch, and audit logging.
-  * Academic resource features: Course catalog, prerequisite/credit tracking, dynamic weekly timetable grid, attendance taking, grade assignment with semester deadline validation, and broadcast announcements.
-  * Production deployment on Vercel (Frontend) and Render/PostgreSQL (Backend).
-* **Out of Scope (Non-Goals):**
-  * Financial tuition payment processing or credit card gateways (deferred to external bursar billing APIs).
-  * Direct SMS messaging gateways (system relies on internal inbox and real-time websockets).
-  * Mobile native binary applications (solved via responsive, mobile-first Web SPA architecture).
-* **Assumptions and Constraints:**
-  * Modern web browser support (Chrome, Firefox, Safari, Edge) with JavaScript and LocalStorage enabled.
-  * Hosting constraints of free-tier cloud environments (Render spin-down mitigated by in-memory caching and keep-alive pings).
+## A4. Scope and Non-Goals
 
-### A5. User Stories
+- **In Scope:**
 
-#### Table 4: Product User Stories
-| Story ID | Persona | Action Requirement | Business Value & Justification |
-| :--- | :--- | :--- | :--- |
+- JWT-based authentication with bcrypt password hashing and environment-variable pepper.
+
+- Reusable, server-enforced Role-Based Access Control (RBAC) across Students, Faculty, and Administrators.
+
+- Ownership-based data isolation across enrollments, grading, and course management.
+
+- Enterprise Security Center: User session tracking, remote session revocation, force-logout killswitch, and audit logging.
+
+- Academic resource features: Course catalog, prerequisite/credit tracking, dynamic weekly timetable grid, attendance taking, grade assignment with semester deadline validation, and broadcast announcements.
+
+- Production deployment on Vercel (Frontend) and Render/PostgreSQL (Backend).
+
+- **Out of Scope (Non-Goals):**
+
+- Financial tuition payment processing or credit card gateways (deferred to external bursar billing APIs).
+
+- Direct SMS messaging gateways (system relies on internal inbox and real-time websockets).
+
+- Mobile native binary applications (solved via responsive, mobile-first Web SPA architecture).
+
+- **Assumptions and Constraints:**
+
+- Modern web browser support (Chrome, Firefox, Safari, Edge) with JavaScript and LocalStorage enabled.
+
+- Hosting constraints of free-tier cloud environments (Render spin-down mitigated by in-memory caching and keep-alive pings).
+
+## A5. User Stories
+
+**Table 4: Product User Stories**
+
+| **Story ID** | **Persona** | **Action Requirement** | **Business Value & Justification** |
+| --- | --- | --- | --- |
 | **US-01** | Visitor | Sign up with email, password, full name, and role | Create a secure academic account to access university services. |
 | **US-02** | User | Log in with registered credentials and receive a signed JWT | Establish an authenticated, encrypted session without exposing passwords. |
 | **US-03** | User | Log out cleanly, invalidating active device tokens | Ensure public/shared library computers cannot be accessed by subsequent users. |
@@ -202,110 +207,122 @@ From an institutional security standpoint, legacy university portals often store
 | **US-11** | Admin | Search users, filter by role/status, and ban violators with a reason | Maintain campus safety and prevent abusive or compromised accounts from acting. |
 | **US-12** | Admin | View real-time security events and revoke suspect device sessions | Detect token tampering, credential brute-forcing, and isolate stolen devices. |
 
----
-
 # Part B. Software Requirements (SRS)
 
-### B1. Introduction & Definitions
+## B1. Introduction & Definitions
+
 This Software Requirements Specification (SRS) establishes the complete functional and non-functional requirements for the CourseEnroll platform. It serves as the formal technical contract for system behavior, access limits, and security validation.
 
-#### Terminology & Standards
-* **JWT (JSON Web Token - RFC 7519):** An open standard defining a compact, URL-safe container for cryptographically signed claims.
-* **Access Token:** A short-lived, cryptographically signed Bearer token granting access to authorized API endpoints.
-* **JTI (JWT ID):** A unique UUID4 identifier embedded in every issued token used for precise session tracking and revocation.
-* **RBAC (Role-Based Access Control):** An authorization mechanism where system access rights are granted based on assigned roles rather than individual user identities.
-* **Pepper:** A server-side secret constant stored outside the database, appended to passwords before hashing to protect against database leak compromises.
-* **Audit Log:** An append-only chronological record of security-relevant system operations providing verifiable evidence of activities.
+**Terminology & Standards**
 
-### B2. Functional Requirements
+- **JWT (JSON Web Token - RFC 7519):** An open standard defining a compact, URL-safe container for cryptographically signed claims.
 
-#### Table 5: Functional Requirements — Authentication (`FR-AUTH`)
-| Requirement ID | Requirement Description | Enforcing Component |
-| :--- | :--- | :--- |
-| **FR-AUTH-01** | The system shall register users with name, email, password, and role, ensuring email uniqueness. | `POST /auth/register` |
-| **FR-AUTH-02** | The system shall hash passwords using Bcrypt combined with an environment secret Pepper. | `backend/auth.py` |
-| **FR-AUTH-03** | The system shall authenticate valid credentials and issue a signed HS256 JWT access token. | `POST /auth/login` |
-| **FR-AUTH-04** | The access token payload shall embed `sub` (email), `id`, `role`, `name`, `tv`, `jti`, and `exp`. | `backend/auth.py` |
-| **FR-AUTH-05** | The system shall restrict access token lifetime to 60 minutes or less. | `backend/auth.py` |
-| **FR-AUTH-06** | The system shall track failed logins and lock an account for 30 minutes upon 5 consecutive failures. | `models.User.locked_until` |
-| **FR-AUTH-07** | The system shall register active device sessions into `user_sessions` with IP and client hints. | `models.UserSession` |
-| **FR-AUTH-08** | The system shall revoke active session tokens upon logout by writing their `jti` to `token_blacklist`. | `POST /auth/logout` |
-| **FR-AUTH-09** | The system shall reject missing, expired, tampered, or blacklisted tokens with `HTTP 401`. | `backend/main.py:get_current_user` |
-| **FR-AUTH-10** | The system shall support global session revocation by incrementing user `token_version`. | `POST /admin/security/force-logout-all` |
+- **Access Token:** A short-lived, cryptographically signed Bearer token granting access to authorized API endpoints.
 
-#### Table 6: Functional Requirements — Role-Based Access Control (`FR-RBAC`)
-| Requirement ID | Requirement Description | Enforcing Component |
-| :--- | :--- | :--- |
-| **FR-RBAC-01** | The system shall enforce role checks on every protected endpoint via a centralized dependency. | `RoleChecker` |
-| **FR-RBAC-02** | The system shall reject requests with insufficient role privileges with `HTTP 403 Forbidden`. | `backend/main.py:589` |
-| **FR-RBAC-03** | The system shall restrict course enrollment deletion to the owning student or an administrator. | `DELETE /enrollments/{id}` |
-| **FR-RBAC-04** | The system shall restrict grading and attendance taking to the assigned faculty of that section. | `PUT /enrollments/{id}/grade` |
-| **FR-RBAC-05** | The system shall reject any administrative attempt to ban an administrator account (`HTTP 400`). | `POST /admin/security/users/{id}/ban` |
-| **FR-RBAC-06** | The system shall reject any administrative attempt to demote their own account role (`HTTP 400`). | `PUT /users/{id}` |
-| **FR-RBAC-07** | The system shall immediately block banned users on their next request regardless of token expiry. | `get_current_user` |
-| **FR-RBAC-08** | The system shall enforce frontend route guards matching backend RBAC rules. | `ProtectedRoute.tsx` |
+- **JTI (JWT ID):** A unique UUID4 identifier embedded in every issued token used for precise session tracking and revocation.
 
-#### Table 7: Functional Requirements — Administration & Moderation (`FR-ADM`)
-| Requirement ID | Requirement Description | Enforcing Component |
-| :--- | :--- | :--- |
-| **FR-ADM-01** | The system shall provide aggregate statistics (users, banned accounts, active sessions, events). | `GET /admin/security/stats` |
-| **FR-ADM-02** | The system shall provide searchable, filterable user management with role and status toggles. | `GET /users` & `AdminUsers.tsx` |
-| **FR-ADM-03** | The system shall allow admins to ban users with a mandatory reason, revoking all active sessions. | `POST /admin/security/users/{id}/ban` |
-| **FR-ADM-04** | The system shall allow admins to unban suspended users, restoring standard access. | `POST /admin/security/users/{id}/unban` |
-| **FR-ADM-05** | The system shall provide an audit log view filterable by severity, IP, event type, and user. | `GET /admin/security/events` |
-| **FR-ADM-06** | The system shall display active concurrent sessions with IP, browser hint, and last-seen metrics. | `GET /admin/security/sessions` |
-| **FR-ADM-07** | The system shall allow admins to terminate any specific session remotely. | `DELETE /admin/security/sessions/{id}` |
-| **FR-ADM-08** | The system shall allow admins to assign faculty members to specific course sections. | `PUT /courses/{id}/faculty` |
-| **FR-ADM-09** | The system shall provide a pending enrollment approvals queue with Approve/Reject triggers. | `PUT /enrollments/{id}/status` |
-| **FR-ADM-10** | The system shall allow admins to broadcast university announcements with priority tagging. | `POST /announcements` |
+- **RBAC (Role-Based Access Control):** An authorization mechanism where system access rights are granted based on assigned roles rather than individual user identities.
 
-#### Table 8: Functional Requirements — Academic Resource Domain (`FR-DOMAIN`)
-| Requirement ID | Requirement Description | Enforcing Component |
-| :--- | :--- | :--- |
-| **FR-DOMAIN-01**| The system shall maintain course records with code, title, credits, room, days, and capacity. | `models.Course` |
-| **FR-DOMAIN-02**| The system shall prevent student registration when a course section is full, offering waitlist entry. | `POST /enrollments` |
-| **FR-DOMAIN-03**| The system shall automatically promote the top waitlisted student when an enrolled student drops. | `DELETE /enrollments/{id}` |
-| **FR-DOMAIN-04**| The system shall render a weekly visual timetable matrix showing student class schedules. | `ScheduleTimetable.tsx` |
-| **FR-DOMAIN-05**| The system shall allow faculty to schedule class sessions with date, time, and topic metadata. | `POST /courses/{id}/sessions` |
-| **FR-DOMAIN-06**| The system shall allow faculty to record student attendance (Present, Late, Absent). | `POST /faculty/courses/{id}/attendance` |
-| **FR-DOMAIN-07**| The system shall compute cumulative attendance percentages and export records to CSV. | `FacultyCourseDetails.tsx` |
-| **FR-DOMAIN-08**| The system shall restrict faculty grade submissions to open semester grading windows. | `PUT /enrollments/{id}/grade` |
+- **Pepper:** A server-side secret constant stored outside the database, appended to passwords before hashing to protect against database leak compromises.
 
-### B3. Non-Functional Requirements
+- **Audit Log:** An append-only chronological record of security-relevant system operations providing verifiable evidence of activities.
 
-#### Table 9: Non-Functional Requirements
-| Metric | Requirement Category | Specification & Verification Method |
-| :--- | :--- | :--- |
-| **NFR-SEC-01** | **Secret Isolation** | Zero secrets in repository; `SECRET_KEY`, `PASSWORD_PEPPER`, and `DATABASE_URL` loaded from environment variables. |
-| **NFR-SEC-02** | **Generic Auth Errors** | Failed logins return generic `"Incorrect email or password"` to prevent user enumeration. |
-| **NFR-PERF-01**| **Response Latency** | Authenticated read operations respond in $< 100$ms ($< 10$ms on cached endpoints). |
-| **NFR-PERF-02**| **Database Optimization**| Primary foreign keys (`user_id`, `course_id`, `jti`, `event_type`) indexed in PostgreSQL. |
+## B2. Functional Requirements
+
+**Table 5: Functional Requirements — Authentication (FR-AUTH)**
+
+| **Requirement ID** | **Requirement Description** | **Enforcing Component** |
+| --- | --- | --- |
+| **FR-AUTH-01** | The system shall register users with name, email, password, and role, ensuring email uniqueness. | POST /auth/register |
+| **FR-AUTH-02** | The system shall hash passwords using Bcrypt combined with an environment secret Pepper. | backend/auth.py |
+| **FR-AUTH-03** | The system shall authenticate valid credentials and issue a signed HS256 JWT access token. | POST /auth/login |
+| **FR-AUTH-04** | The access token payload shall embed sub (email), id, role, name, tv, jti, and exp. | backend/auth.py |
+| **FR-AUTH-05** | The system shall restrict access token lifetime to 60 minutes or less. | backend/auth.py |
+| **FR-AUTH-06** | The system shall track failed logins and lock an account for 30 minutes upon 5 consecutive failures. | models.User.locked_until |
+| **FR-AUTH-07** | The system shall register active device sessions into user_sessions with IP and client hints. | models.UserSession |
+| **FR-AUTH-08** | The system shall revoke active session tokens upon logout by writing their jti to token_blacklist. | POST /auth/logout |
+| **FR-AUTH-09** | The system shall reject missing, expired, tampered, or blacklisted tokens with HTTP 401. | backend/main.py:get_current_user |
+| **FR-AUTH-10** | The system shall support global session revocation by incrementing user token_version. | POST /admin/security/force-logout-all |
+
+**Table 6: Functional Requirements — Role-Based Access Control (FR-RBAC)**
+
+| **Requirement ID** | **Requirement Description** | **Enforcing Component** |
+| --- | --- | --- |
+| **FR-RBAC-01** | The system shall enforce role checks on every protected endpoint via a centralized dependency. | RoleChecker |
+| **FR-RBAC-02** | The system shall reject requests with insufficient role privileges with HTTP 403 Forbidden. | backend/main.py:589 |
+| **FR-RBAC-03** | The system shall restrict course enrollment deletion to the owning student or an administrator. | DELETE /enrollments/{id} |
+| **FR-RBAC-04** | The system shall restrict grading and attendance taking to the assigned faculty of that section. | PUT /enrollments/{id}/grade |
+| **FR-RBAC-05** | The system shall reject any administrative attempt to ban an administrator account (HTTP 400). | POST /admin/security/users/{id}/ban |
+| **FR-RBAC-06** | The system shall reject any administrative attempt to demote their own account role (HTTP 400). | PUT /users/{id} |
+| **FR-RBAC-07** | The system shall immediately block banned users on their next request regardless of token expiry. | get_current_user |
+| **FR-RBAC-08** | The system shall enforce frontend route guards matching backend RBAC rules. | ProtectedRoute.tsx |
+
+**Table 7: Functional Requirements — Administration & Moderation (FR-ADM)**
+
+| **Requirement ID** | **Requirement Description** | **Enforcing Component** |
+| --- | --- | --- |
+| **FR-ADM-01** | The system shall provide aggregate statistics (users, banned accounts, active sessions, events). | GET /admin/security/stats |
+| **FR-ADM-02** | The system shall provide searchable, filterable user management with role and status toggles. | GET /users & AdminUsers.tsx |
+| **FR-ADM-03** | The system shall allow admins to ban users with a mandatory reason, revoking all active sessions. | POST /admin/security/users/{id}/ban |
+| **FR-ADM-04** | The system shall allow admins to unban suspended users, restoring standard access. | POST /admin/security/users/{id}/unban |
+| **FR-ADM-05** | The system shall provide an audit log view filterable by severity, IP, event type, and user. | GET /admin/security/events |
+| **FR-ADM-06** | The system shall display active concurrent sessions with IP, browser hint, and last-seen metrics. | GET /admin/security/sessions |
+| **FR-ADM-07** | The system shall allow admins to terminate any specific session remotely. | DELETE /admin/security/sessions/{id} |
+| **FR-ADM-08** | The system shall allow admins to assign faculty members to specific course sections. | PUT /courses/{id}/faculty |
+| **FR-ADM-09** | The system shall provide a pending enrollment approvals queue with Approve/Reject triggers. | PUT /enrollments/{id}/status |
+| **FR-ADM-10** | The system shall allow admins to broadcast university announcements with priority tagging. | POST /announcements |
+
+**Table 8: Functional Requirements — Academic Resource Domain (FR-DOMAIN)**
+
+| **Requirement ID** | **Requirement Description** | **Enforcing Component** |
+| --- | --- | --- |
+| **FR-DOMAIN-01** | The system shall maintain course records with code, title, credits, room, days, and capacity. | models.Course |
+| **FR-DOMAIN-02** | The system shall prevent student registration when a course section is full, offering waitlist entry. | POST /enrollments |
+| **FR-DOMAIN-03** | The system shall automatically promote the top waitlisted student when an enrolled student drops. | DELETE /enrollments/{id} |
+| **FR-DOMAIN-04** | The system shall render a weekly visual timetable matrix showing student class schedules. | ScheduleTimetable.tsx |
+| **FR-DOMAIN-05** | The system shall allow faculty to schedule class sessions with date, time, and topic metadata. | POST /courses/{id}/sessions |
+| **FR-DOMAIN-06** | The system shall allow faculty to record student attendance (Present, Late, Absent). | POST /faculty/courses/{id}/attendance |
+| **FR-DOMAIN-07** | The system shall compute cumulative attendance percentages and export records to CSV. | FacultyCourseDetails.tsx |
+| **FR-DOMAIN-08** | The system shall restrict faculty grade submissions to open semester grading windows. | PUT /enrollments/{id}/grade |
+
+## B3. Non-Functional Requirements
+
+**Table 9: Non-Functional Requirements**
+
+| **Metric** | **Requirement Category** | **Specification & Verification Method** |
+| --- | --- | --- |
+| **NFR-SEC-01** | **Secret Isolation** | Zero secrets in repository; SECRET_KEY, PASSWORD_PEPPER, and DATABASE_URL loaded from environment variables. |
+| **NFR-SEC-02** | **Generic Auth Errors** | Failed logins return generic "Incorrect email or password" to prevent user enumeration. |
+| **NFR-PERF-01** | **Response Latency** | Authenticated read operations respond in <100ms (<10ms on cached endpoints). |
+| **NFR-PERF-02** | **Database Optimization** | Primary foreign keys (user_id, course_id, jti, event_type) indexed in PostgreSQL. |
 | **NFR-USE-01** | **Responsive Design** | UI supports 320px mobile screens up to 4K desktop screens without layout breaking. |
 | **NFR-USE-02** | **Zero Guest Flash** | Protected routes render neutral loading skeleton until session confirmation. |
 | **NFR-REL-01** | **Data Persistence** | All state changes persist to PostgreSQL database surviving server restarts. |
-| **NFR-MAINT-01**| **Modular Architecture**| Authorization rules enforced via a single reusable dependency class (`RoleChecker`). |
+| **NFR-MAINT-01** | **Modular Architecture** | Authorization rules enforced via a single reusable dependency class (RoleChecker). |
 
-### B4. Roles and Permission Matrix
+## B4. Roles and Permission Matrix
 
-#### Table 10: Endpoint Authorization Matrix by Role
-| Endpoint Path & Action | Visitor | Student | Faculty | Admin |
-| :--- | :---: | :---: | :---: | :---: |
-| `POST /auth/register`, `POST /auth/login` | Yes | Yes | Yes | Yes |
-| `GET /auth/me`, `POST /auth/logout` | No | Yes | Yes | Yes |
-| `GET /courses`, `GET /semesters` | No | Yes | Yes | Yes |
-| `POST /enrollments` (Register / Waitlist) | No | Yes | No | Yes |
-| `GET /enrollments/my` | No | Own Only | No | Yes |
-| `DELETE /enrollments/{id}` (Drop) | No | Own Only | No | Yes |
-| `GET /faculty/courses` | No | No | Own Only | Yes |
-| `POST /faculty/courses/{id}/attendance` | No | No | Own Only | Yes |
-| `PUT /enrollments/{id}/grade` | No | No | Own Only | Yes |
-| `GET /admin/security/*` | No | No | No | Yes |
-| `POST /admin/security/users/{id}/ban` | No | No | No | Yes |
-| `POST /announcements` (Broadcast) | No | No | No | Yes |
+**Table 10: Endpoint Authorization Matrix by Role**
 
-#### Table 11: Course Section & Shared Resource Permission Matrix
-| Resource Action | Unenrolled Student | Enrolled Student | Section Faculty | Course Owner / Admin |
-| :--- | :---: | :---: | :---: | :---: |
+| **Endpoint Path & Action** | **Visitor** | **Student** | **Faculty** | **Admin** |
+| --- | --- | --- | --- | --- |
+| POST /auth/register, POST /auth/login | Yes | Yes | Yes | Yes |
+| GET /auth/me, POST /auth/logout | No | Yes | Yes | Yes |
+| GET /courses, GET /semesters | No | Yes | Yes | Yes |
+| POST /enrollments (Register / Waitlist) | No | Yes | No | Yes |
+| GET /enrollments/my | No | Own Only | No | Yes |
+| DELETE /enrollments/{id} (Drop) | No | Own Only | No | Yes |
+| GET /faculty/courses | No | No | Own Only | Yes |
+| POST /faculty/courses/{id}/attendance | No | No | Own Only | Yes |
+| PUT /enrollments/{id}/grade | No | No | Own Only | Yes |
+| GET /admin/security/* | No | No | No | Yes |
+| POST /admin/security/users/{id}/ban | No | No | No | Yes |
+| POST /announcements (Broadcast) | No | No | No | Yes |
+
+**Table 11: Course Section & Shared Resource Permission Matrix**
+
+| **Resource Action** | **Unenrolled Student** | **Enrolled Student** | **Section Faculty** | **Course Owner / Admin** |
+| --- | --- | --- | --- | --- |
 | **Read Section Schedule & Syllabus** | Yes | Yes | Yes | Yes |
 | **Join Course / Waitlist Queue** | Yes | Already Enrolled | No | Yes |
 | **Drop Course Section** | No | Yes (Own Record) | No | Yes (Any Student) |
@@ -315,124 +332,136 @@ This Software Requirements Specification (SRS) establishes the complete function
 | **Assign or Reassign Instructor** | No | No | No | Yes (Owner/Admin) |
 | **Delete Section from Registry** | No | No | No | Yes (Owner/Admin) |
 
-#### Table 12: System Invariant Safety Rules
-| Safety Rule ID | Rule Invariant Description | Rejection Mechanism |
-| :--- | :--- | :--- |
-| **SAFE-01** | An administrator cannot ban another administrator. | `HTTP 400: Administrator accounts cannot be banned` |
-| **SAFE-02** | An administrator cannot demote their own account role. | `HTTP 400: Administrators cannot change their own role` |
-| **SAFE-03** | An administrator cannot delete their own account. | `HTTP 400: Administrator accounts cannot be removed` |
-| **SAFE-04** | A suspended/banned user is blocked on the very next request. | `HTTP 401: Account suspended: <reason>` |
-| **SAFE-05** | Global emergency logout invalidates all user tokens immediately. | `HTTP 401: Session revoked (global logout)` |
+**Table 12: System Invariant Safety Rules**
 
-### B5. Use Cases
+| **Safety Rule ID** | **Rule Invariant Description** | **Rejection Mechanism** |
+| --- | --- | --- |
+| **SAFE-01** | An administrator cannot ban another administrator. | HTTP 400: Administrator accounts cannot be banned |
+| **SAFE-02** | An administrator cannot demote their own account role. | HTTP 400: Administrators cannot change their own role |
+| **SAFE-03** | An administrator cannot delete their own account. | HTTP 400: Administrator accounts cannot be removed |
+| **SAFE-04** | A suspended/banned user is blocked on the very next request. | HTTP 401: Account suspended: <reason> |
+| **SAFE-05** | Global emergency logout invalidates all user tokens immediately. | HTTP 401: Session revoked (global logout) |
 
-```mermaid
-flowchart LR
-    Student((Student))
-    Faculty((Faculty))
-    Admin((Administrator))
+## B5. Use Cases
 
-    subgraph Authentication
-        UC1[Log In & Establish Session]
-        UC2[Log Out & Invalidate Token]
-    end
+![Figure 2: System Use Case Model across User Actors](images/fig2_use_case_flowchart.png)
 
-    subgraph Academic Operations
-        UC3[Enroll or Join Waitlist]
-        UC4[Take Class Attendance]
-        UC5[Submit Student Grade]
-    end
-
-    subgraph Security & Moderation
-        UC6[Ban Malicious User]
-        UC7[Inspect Security Events]
-        UC8[Force Logout All Users]
-    end
-
-    Student --> UC1
-    Student --> UC2
-    Student --> UC3
-
-    Faculty --> UC1
-    Faculty --> UC2
-    Faculty --> UC4
-    Faculty --> UC5
-
-    Admin --> UC1
-    Admin --> UC2
-    Admin --> UC6
-    Admin --> UC7
-    Admin --> UC8
-```
 *Figure 2: System Use Case Model across User Actors*
 
-#### Table 13: Detailed Use Case Specifications
-* **Use Case UC-01: Authenticate and Establish Session**
-  * *Actor:* Registered User (Student, Faculty, or Admin)
-  * *Preconditions:* User has registered account and is not banned.
-  * *Main Flow:* User submits email and password -> Server validates Bcrypt hash + Pepper -> Server records `user_sessions` entry -> Server generates signed JWT containing `jti` -> React client saves token in `localStorage` -> Client redirects to role dashboard.
-  * *Alternative Flow:* Invalid password -> Server increments `login_attempts` and writes `login_failed` security event -> Returns `401 Unauthorized`.
-  * *Lockout Flow:* 5th consecutive failure -> Server sets `locked_until = now + 30m` -> Returns `403 Forbidden`.
-* **Use Case UC-03: Course Registration with Automatic Waitlisting**
-  * *Actor:* Authenticated Student
-  * *Preconditions:* Active semester, course exists, student not currently enrolled.
-  * *Main Flow:* Student clicks "Request Enrollment" -> Server checks capacity -> If seats available, creates `Enrollment(status='pending')` -> Returns `200 OK`.
-  * *Capacity Flow:* Course capacity reached -> Server creates `Enrollment(status='waitlisted')` -> Returns notification of waitlist placement.
-* **Use Case UC-06: Administrative User Ban & Immediate Session Invalidation**
-  * *Actor:* Authenticated Administrator
-  * *Preconditions:* Admin logged in; target user is not an administrator.
-  * *Main Flow:* Admin opens User Management -> Clicks "Ban User" -> Enters suspension reason -> Submits -> Server validates target role != 'admin' -> Sets `target.is_banned = True` -> Sets all active `user_sessions` for target to `is_active = False` -> Blacklists `jti` tokens -> Invalidates auth cache -> Writes `user_banned` event -> Returns `200 OK`.
-  * *Error Flow:* Admin attempts to ban another admin -> Server rejects with `HTTP 400 Bad Request: Administrator accounts cannot be banned`.
+> **[Image content — transcribed]**
+>
+> *Title in image:* "FLOWERCHART: ACADEMIC SYSTEM USER USE CASES."
+>
+> Centre circle: **Education System** with three actors: **Student**, **Faculty**, **Admin**.
+>
+> Petals around the centre:
+> - **Authentication** (blue): *Log In & Establish Session*, *Log Out & Invalidate Token*
+> - **Academic Operations** (green): *Enroll or Join Waitlist*, *Take Class Attendance*, *Take Class Attendance*, *Submit Student Grade*
+> - **Security & Moderation** (red): *Security & Moderation*, *Inspect Security Events*, *Force Logout All Users*
 
-### B6. Acceptance Criteria (Gherkin Format)
+**Table 13: Detailed Use Case Specifications**
 
-#### Table 14: Acceptance Criteria Specifications
-* **Scenario AC-01: Expired Token Rejection**
-  * *Given* a student possesses a JWT access token whose `exp` timestamp is in the past,
-  * *When* the student attempts to fetch `/enrollments/my`,
-  * *Then* the server rejects the request with `HTTP 401 Unauthorized` and payload detail `"Token expired"`,
-  * *And* the frontend interceptor clears `localStorage` and redirects to `/login`.
-* **Scenario AC-02: Tampered Token Detection**
-  * *Given* an attacker tampers with the payload of a JWT to change their role to `"admin"`,
-  * *When* the request reaches any endpoint guarded by `get_current_user`,
-  * *Then* signature verification fails,
-  * *And* the server logs a `token_tampered` audit event with the attacker's IP and User-Agent,
-  * *And* returns `HTTP 401 Unauthorized: Invalid authentication token`.
-* **Scenario AC-03: Immediate Banned User Rejection**
-  * *Given* a student holds an active, unexpired JWT token,
-  * *When* an administrator sets `is_banned = True` on that student's account,
-  * *Then* the student's very next API request returns `HTTP 401 Unauthorized: Account suspended`,
-  * *And* the student is immediately ejected to the login screen.
-* **Scenario AC-04: Administrator Self-Protection Invariant**
-  * *Given* an administrator is authenticated,
-  * *When* they issue a ban command against another administrator account ID,
-  * *Then* the server halts execution and returns `HTTP 400 Bad Request: Administrator accounts cannot be banned`.
+- **Use Case UC-01: Authenticate and Establish Session**
 
-### B7. Traceability Matrix
+- *Actor:* Registered User (Student, Faculty, or Admin)
 
-#### Table 15: Comprehensive Traceability Matrix
-| Requirement ID | Implemented Endpoint / Screen | Automated Test Case | Verification Evidence |
-| :--- | :--- | :--- | :--- |
-| **FR-AUTH-03** | `POST /auth/login` | `test_login_success_returns_jwt` | Screenshot S1 |
-| **FR-AUTH-06** | `POST /auth/login` (Lockout) | `test_login_failure_invalid_password` | Screenshot S1 |
-| **FR-AUTH-09** | `backend/main.py:get_current_user` | `test_missing_token_rejection` | Screenshot S7 |
-| **FR-AUTH-09** | `backend/main.py:get_current_user` | `test_tampered_token_rejection` | Screenshot S7 |
-| **FR-RBAC-02** | `GET /admin/security/stats` | `test_rbac_rule_1_student_blocked_from_admin_security` | Screenshot S6 |
-| **FR-RBAC-02** | `POST /announcements` | `test_rbac_rule_2_student_blocked_from_broadcasting_announcements` | Screenshot S6 |
-| **FR-RBAC-02** | `POST /admin/security/force-logout-all`| `test_rbac_rule_3_faculty_blocked_from_admin_user_management` | Screenshot S6 |
-| **FR-RBAC-05** | `POST /admin/security/users/{id}/ban` | `test_rbac_rule_4_safety_admin_cannot_ban_admin` | Screenshot S13 |
-| **FR-ADM-06** | `GET /admin/security/sessions` | Manual Test Suite | Screenshot S4 |
-| **FR-DOMAIN-03**| `DELETE /enrollments/{id}` | Manual Integration Suite | Screenshot S2 |
+- *Preconditions:* User has registered account and is not banned.
 
----
+- *Main Flow:* User submits email and password -> Server validates Bcrypt hash + Pepper -> Server records user_sessions entry -> Server generates signed JWT containing jti -> React client saves token in localStorage -> Client redirects to role dashboard.
+
+- *Alternative Flow:* Invalid password -> Server increments login_attempts and writes login_failed security event -> Returns 401 Unauthorized.
+
+- *Lockout Flow:* 5th consecutive failure -> Server sets locked_until = now + 30m -> Returns 403 Forbidden.
+
+- **Use Case UC-03: Course Registration with Automatic Waitlisting**
+
+- *Actor:* Authenticated Student
+
+- *Preconditions:* Active semester, course exists, student not currently enrolled.
+
+- *Main Flow:* Student clicks "Request Enrollment" -> Server checks capacity -> If seats available, creates Enrollment(status='pending') -> Returns 200 OK.
+
+- *Capacity Flow:* Course capacity reached -> Server creates Enrollment(status='waitlisted') -> Returns notification of waitlist placement.
+
+- **Use Case UC-06: Administrative User Ban & Immediate Session Invalidation**
+
+- *Actor:* Authenticated Administrator
+
+- *Preconditions:* Admin logged in; target user is not an administrator.
+
+- *Main Flow:* Admin opens User Management -> Clicks "Ban User" -> Enters suspension reason -> Submits -> Server validates target role != 'admin' -> Sets target.is_banned = True -> Sets all active user_sessions for target to is_active = False -> Blacklists jti tokens -> Invalidates auth cache -> Writes user_banned event -> Returns 200 OK.
+
+- *Error Flow:* Admin attempts to ban another admin -> Server rejects with HTTP 400 Bad Request: Administrator accounts cannot be banned.
+
+## B6. Acceptance Criteria (Gherkin Format)
+
+**Table 14: Acceptance Criteria Specifications**
+
+- **Scenario AC-01: Expired Token Rejection**
+
+- *Given* a student possesses a JWT access token whose exp timestamp is in the past,
+
+- *When* the student attempts to fetch /enrollments/my,
+
+- *Then* the server rejects the request with HTTP 401 Unauthorized and payload detail "Token expired",
+
+- *And* the frontend interceptor clears localStorage and redirects to /login.
+
+- **Scenario AC-02: Tampered Token Detection**
+
+- *Given* an attacker tampers with the payload of a JWT to change their role to "admin",
+
+- *When* the request reaches any endpoint guarded by get_current_user,
+
+- *Then* signature verification fails,
+
+- *And* the server logs a token_tampered audit event with the attacker's IP and User-Agent,
+
+- *And* returns HTTP 401 Unauthorized: Invalid authentication token.
+
+- **Scenario AC-03: Immediate Banned User Rejection**
+
+- *Given* a student holds an active, unexpired JWT token,
+
+- *When* an administrator sets is_banned = True on that student's account,
+
+- *Then* the student's very next API request returns HTTP 401 Unauthorized: Account suspended,
+
+- *And* the student is immediately ejected to the login screen.
+
+- **Scenario AC-04: Administrator Self-Protection Invariant**
+
+- *Given* an administrator is authenticated,
+
+- *When* they issue a ban command against another administrator account ID,
+
+- *Then* the server halts execution and returns HTTP 400 Bad Request: Administrator accounts cannot be banned.
+
+## B7. Traceability Matrix
+
+**Table 15: Comprehensive Traceability Matrix**
+
+| **Requirement ID** | **Implemented Endpoint / Screen** | **Automated Test Case** | **Verification Evidence** |
+| --- | --- | --- | --- |
+| **FR-AUTH-03** | POST /auth/login | test_login_success_returns_jwt | Screenshot S1 |
+| **FR-AUTH-06** | POST /auth/login (Lockout) | test_login_failure_invalid_password | Screenshot S1 |
+| **FR-AUTH-09** | backend/main.py:get_current_user | test_missing_token_rejection | Screenshot S7 |
+| **FR-AUTH-09** | backend/main.py:get_current_user | test_tampered_token_rejection | Screenshot S7 |
+| **FR-RBAC-02** | GET /admin/security/stats | test_rbac_rule_1_student_blocked_from_admin_security | Screenshot S6 |
+| **FR-RBAC-02** | POST /announcements | test_rbac_rule_2_student_blocked_from_broadcasting_announcements | Screenshot S6 |
+| **FR-RBAC-02** | POST /admin/security/force-logout-all | test_rbac_rule_3_faculty_blocked_from_admin_user_management | Screenshot S6 |
+| **FR-RBAC-05** | POST /admin/security/users/{id}/ban | test_rbac_rule_4_safety_admin_cannot_ban_admin | Screenshot S13 |
+| **FR-ADM-06** | GET /admin/security/sessions | Manual Test Suite | Screenshot S4 |
+| **FR-DOMAIN-03** | DELETE /enrollments/{id} | Manual Integration Suite | Screenshot S2 |
 
 # Part C. Technical Design (TDD)
 
-### C1. Technology Stack
+## C1. Technology Stack
 
-#### Table 16: Production Technology Stack
-| Layer | Technology | Version | Architectural Justification |
-| :--- | :--- | :--- | :--- |
+**Table 16: Production Technology Stack**
+
+| **Layer** | **Technology** | **Version** | **Architectural Justification** |
+| --- | --- | --- | --- |
 | **Frontend Framework** | React with TypeScript | 19.0.0 | High-performance component-driven architecture with compile-time type safety. |
 | **Frontend Tooling** | Vite | 6.2.0 | Ultra-fast Hot Module Replacement (HMR) and optimized Rollup production builds. |
 | **HTTP Client** | Axios | 1.8.1 | Native support for request/response interceptors to manage Bearer tokens and 401 traps. |
@@ -445,260 +474,247 @@ flowchart LR
 | **Frontend Hosting** | Vercel Edge Network | Production | Global edge CDN deployment with automated CI/CD from Git commits. |
 | **Backend Hosting** | Render Web Services | Production | Managed cloud container service hosting Python ASGI processes. |
 
-### C2. System Architecture
+## C2. System Architecture
 
-```mermaid
-flowchart TD
-    Client["Client Browser\n(React 19 + TypeScript SPA)"]
-    Vercel["Vercel Global Edge CDN\n(Frontend Static Hosting)"]
-    Render["Render Web Service\n(FastAPI ASGI Application)"]
-    Supabase["PostgreSQL Database\n(Hosted on Supabase)"]
-    AuthCache["In-Memory Auth & Data Cache\n(FastAPI Worker Memory)"]
+![Figure 1: High-Level System Architecture and Component Interactions](images/fig1_system_architecture.png)
 
-    Client -- "1. HTTPS GET Static Assets" --> Vercel
-    Vercel -- "2. Returns Compiled HTML/JS/CSS Bundle" --> Client
-    Client -- "3. REST API Requests (Authorization: Bearer JWT)" --> Render
-    Render -- "4. Sub-millisecond Session / Cache Lookup" --> AuthCache
-    Render -- "5. SQL Queries / Relational Updates" --> Supabase
-    Supabase -- "6. Returns Query Result Sets" --> Render
-    Render -- "7. JSON Response Payload" --> Client
-```
 *Figure 1: High-Level System Architecture and Component Interactions*
 
-#### Architecture Data Flow Descriptions:
-1. **Client to Vercel (Arrow 1 & 2):** The user's web browser queries the public URL (`https://2310176-course-enroll.vercel.app`). Vercel's global edge network resolves the request and returns the minified React SPA bundle.
-2. **Client to Render (Arrow 3):** All stateful actions (login, course registration, attendance, user bans) trigger Axios HTTP calls targeting the backend API (`https://two310176-courseenroll.onrender.com`). Every protected request injects the JWT access token in the standard `Authorization: Bearer <token>` header.
-3. **Render to In-Memory Cache (Arrow 4):** Before querying PostgreSQL, the FastAPI server checks its local cache (`_auth_cache`). If an authenticated user's session token (`jti`) is cached and $< 30$ seconds old, the token is verified in $0.001$ms.
-4. **Render to PostgreSQL (Arrow 5 & 6):** When a cache miss occurs or a mutating operation runs (e.g. enrolling in a course, banning a user), SQLAlchemy issues parameterized SQL queries to the PostgreSQL database over a secure SSL connection.
-5. **Render to Client (Arrow 7):** FastAPI serializes SQLAlchemy models into strict Pydantic schemas (`UserResponse`, `CourseResponse`) and returns structured JSON responses to the frontend.
+> **[Image content — transcribed]**
+>
+> Components: **Client Browser** (React 19 + TypeScript SPA) · **Vercel Global Edge CDN** (Frontend Static Hosting) · **Render Web Service** (FastAPI ASGI Application) containing **AuthCache** (In-Memory Auth & Data Cache, FastAPI Worker Memory) · **Supabase** (PostgreSQL Database).
+>
+> Numbered arrows:
+> 1. HTTPS GET Static Assets (browser → Vercel)
+> 2. Returns Compiled HTML/JS/CSS Bundle (Vercel → browser)
+> 3. REST API Requests (Authorization: Bearer JWT) (browser → Render)
+> 4. Sub-millisecond Session / Cache Lookup (Render → AuthCache)
+> 5. SQL Queries / Relational Updates (Render → Supabase)
+> 6. Returns Query Result Sets (Supabase → Render)
+> 7. JSON Response Payload (Render → browser)
 
-### C3. Backend and Frontend Structure
+**Architecture Data Flow Descriptions:**
 
-```
+6. **Client to Vercel (Arrow 1 & 2):** The user's web browser queries the public URL (https://2310176-course-enroll.vercel.app). Vercel's global edge network resolves the request and returns the minified React SPA bundle.
+
+7. **Client to Render (Arrow 3):** All stateful actions (login, course registration, attendance, user bans) trigger Axios HTTP calls targeting the backend API (https://two310176-courseenroll.onrender.com). Every protected request injects the JWT access token in the standard Authorization: Bearer <token> header.
+
+8. **Render to In-Memory Cache (Arrow 4):** Before querying PostgreSQL, the FastAPI server checks its local cache (_auth_cache). If an authenticated user's session token (jti) is cached and <30 seconds old, the token is verified in 0.001ms.
+
+9. **Render to PostgreSQL (Arrow 5 & 6):** When a cache miss occurs or a mutating operation runs (e.g. enrolling in a course, banning a user), SQLAlchemy issues parameterized SQL queries to the PostgreSQL database over a secure SSL connection.
+
+10. **Render to Client (Arrow 7):** FastAPI serializes SQLAlchemy models into strict Pydantic schemas (UserResponse, CourseResponse) and returns structured JSON responses to the frontend.
+
+## C3. Backend and Frontend Structure
+
+```text
 2310176-CourseEnroll/
 ├── backend/
-│   ├── auth.py             # Password hashing, Pepper, JWT creation and signing
-│   ├── database.py         # SQLAlchemy engine, connection pooling, Base model
-│   ├── main.py             # FastAPI entrypoint, routes, get_current_user, RoleChecker
-│   ├── models.py           # Relational database models (Users, Sessions, Events)
-│   ├── requirements.txt    # Python production dependencies
-│   └── schemas.py          # Pydantic data validation and serialization models
+│   ├── auth.py          # Password hashing, Pepper, JWT creation and signing
+│   ├── database.py      # SQLAlchemy engine, connection pooling, Base model
+│   ├── main.py          # FastAPI entrypoint, routes, get_current_user, RoleChecker
+│   ├── models.py        # Relational database models (Users, Sessions, Events)
+│   ├── requirements.txt # Python production dependencies
+│   └── schemas.py       # Pydantic data validation and serialization models
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Reusable UI (Modal, ProtectedRoute, SearchInput, Skeleton)
-│   │   ├── pages/          # Role views (AdminUsers, StudentCourses, FacultyCourseDetails)
+│   │   ├── components/  # Reusable UI (Modal, ProtectedRoute, SearchInput, Skeleton)
+│   │   ├── pages/       # Role views (AdminUsers, StudentCourses, FacultyCourseDetails)
 │   │   ├── api.ts          # Axios client, Bearer interceptor, SWR caching engine
 │   │   ├── AuthContext.tsx # React Context managing login state and token persistence
-│   │   ├── index.css       # Unified design system stylesheet
-│   │   └── App.tsx         # Route router declarations and ProtectedRoute wraps
-│   ├── package.json        # Node.js dependencies and build scripts
-│   └── vercel.json         # Vercel SPA routing rewrites
+│   │   ├── index.css    # Unified design system stylesheet
+│   │   └── App.tsx      # Route router declarations and ProtectedRoute wraps
+│   ├── package.json     # Node.js dependencies and build scripts
+│   └── vercel.json      # Vercel SPA routing rewrites
 ├── tests/
 │   └── test_auth_and_rbac.py # Pytest automated test suites
-├── pyproject.toml          # Poetry and project metadata configuration
-└── README.md               # Repository documentation
+├── pyproject.toml       # Poetry and project metadata configuration
+└── README.md            # Repository documentation
 ```
 
-* **Backend Key Modules:**
-  * `backend/auth.py`: Centralizes password verification (`verify_password`), pepper injection (`PASSWORD_PEPPER`), and JWT signing (`create_access_token`).
-  * `backend/main.py`: Contains the application factory, CORS policies, the `get_current_user` dependency, the `RoleChecker` authorization class, and endpoint route controllers.
-  * `backend/models.py`: Declares SQLAlchemy ORM models enforcing foreign keys, cascading deletes, and database indexes.
-* **Frontend Key Modules:**
-  * `frontend/src/api.ts`: Centralizes the Axios instance, attaches Bearer headers, intercepts 401s, and houses the Stale-While-Revalidate memory/sessionStorage caching engine.
-  * `frontend/src/AuthContext.tsx`: Provides reactive authentication state across all React components and prevents guest screen flashing.
-  * `frontend/src/components/ProtectedRoute.tsx`: Route guard checking authentication and matching user roles before rendering protected pages.
+- **Backend Key Modules:**
 
-### C4. Data Model
+- backend/auth.py: Centralizes password verification (verify_password), pepper injection (PASSWORD_PEPPER), and JWT signing (create_access_token).
 
-```mermaid
-erDiagram
-    User ||--o{ UserSession : "has active"
-    User ||--o{ TokenBlacklist : "has revoked"
-    User ||--o{ SecurityEvent : "generates"
-    User ||--o{ Enrollment : "enrolls in"
-    User ||--o{ Course : "teaches"
-    Semester ||--o{ Course : "contains"
-    Course ||--o{ ClassSession : "schedules"
-    Course ||--o{ Enrollment : "has"
-    Enrollment ||--o{ Attendance : "logs"
-    ClassSession ||--o{ Attendance : "records"
+- backend/main.py: Contains the application factory, CORS policies, the get_current_user dependency, the RoleChecker authorization class, and endpoint route controllers.
 
-    User {
-        int id PK
-        string name
-        string email UK
-        string password_hash
-        string role
-        boolean is_banned
-        string ban_reason
-        int login_attempts
-        datetime locked_until
-        int token_version
-    }
+- backend/models.py: Declares SQLAlchemy ORM models enforcing foreign keys, cascading deletes, and database indexes.
 
-    UserSession {
-        int id PK
-        int user_id FK
-        string jti UK
-        string ip_address
-        string user_agent
-        string device_hint
-        datetime created_at
-        datetime last_seen
-        boolean is_active
-    }
+- **Frontend Key Modules:**
 
-    TokenBlacklist {
-        int id PK
-        string jti UK
-        int user_id FK
-        datetime revoked_at
-        string reason
-    }
+- frontend/src/api.ts: Centralizes the Axios instance, attaches Bearer headers, intercepts 401s, and houses the Stale-While-Revalidate memory/sessionStorage caching engine.
 
-    SecurityEvent {
-        int id PK
-        string event_type
-        int user_id FK
-        string user_email
-        string ip_address
-        string detail
-        string severity
-        datetime created_at
-    }
+- frontend/src/AuthContext.tsx: Provides reactive authentication state across all React components and prevents guest screen flashing.
 
-    Course {
-        int id PK
-        string course_code
-        string course_name
-        int credit
-        int capacity
-        string room
-        int faculty_id FK
-        int semester_id FK
-    }
+- frontend/src/components/ProtectedRoute.tsx: Route guard checking authentication and matching user roles before rendering protected pages.
 
-    Enrollment {
-        int id PK
-        int student_id FK
-        int course_id FK
-        string status
-        string grade
-        datetime enrolled_at
-    }
-```
-*Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema*
+## C4. Data Model
 
-#### Table 17: Database Schema Definitions
-* **`users` Table:**
-  * `id` (INTEGER, PK, Indexed): Unique user identifier.
-  * `email` (VARCHAR, Unique, Indexed): User login email.
-  * `password_hash` (VARCHAR): Cryptographic Bcrypt hash string.
-  * `role` (ENUM: `student`, `faculty`, `admin`): Assigned system role.
-  * `is_banned` (BOOLEAN, Default: False): Suspension status flag.
-  * `ban_reason` (VARCHAR, Nullable): Mandatory reason for suspension.
-  * `login_attempts` (INTEGER, Default: 0): Failed password counter.
-  * `locked_until` (TIMESTAMP, Nullable): Lockout expiration timestamp.
-  * `token_version` (INTEGER, Default: 0): Counter for global token revocation.
-* **`user_sessions` Table:**
-  * `id` (INTEGER, PK): Primary key.
-  * `user_id` (INTEGER, FK -> `users.id`, Indexed): Owning user.
-  * `jti` (VARCHAR, Unique, Indexed): Cryptographic token identifier.
-  * `ip_address` (VARCHAR, Nullable): Client IP address.
-  * `user_agent` (VARCHAR, Nullable): Client browser user agent.
-  * `device_hint` (VARCHAR, Nullable): Human-readable browser and OS string.
-  * `created_at` (TIMESTAMP): Session creation time.
-  * `last_seen` (TIMESTAMP): Last activity heartbeat.
-  * `is_active` (BOOLEAN, Default: True): Session validity flag.
-* **`token_blacklist` Table:**
-  * `id` (INTEGER, PK): Primary key.
-  * `jti` (VARCHAR, Unique, Indexed): Blacklisted JWT ID.
-  * `user_id` (INTEGER, FK -> `users.id`): Associated user.
-  * `revoked_at` (TIMESTAMP): Time of revocation.
-  * `reason` (VARCHAR): Revocation cause (`user_logout`, `admin_revoke`, `user_banned`).
-* **`security_events` Table:**
-  * `id` (INTEGER, PK): Primary key.
-  * `event_type` (VARCHAR, Indexed): Event identifier (`login_success`, `login_failed`, `token_tampered`, `user_banned`, `session_revoked`, `suspicious_activity`).
-  * `user_id` (INTEGER, FK -> `users.id`, Nullable): Associated user if identified.
-  * `user_email` (VARCHAR, Nullable): Email associated with the event.
-  * `ip_address` (VARCHAR, Nullable): Originating IP address.
-  * `detail` (VARCHAR, Nullable): Diagnostic event detail.
-  * `severity` (VARCHAR, Indexed): `info`, `warning`, `critical`.
-  * `created_at` (TIMESTAMP, Indexed): Timestamp of occurrence.
+![Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema](images/fig3_er_schema.png)
 
-### C5. API Design
+## *Figure 3: Entity-Relationship Diagram of the CourseEnroll Relational Schema*
 
-#### Table 18: REST API Endpoints Specification
-| Method | Path | Auth Required | Permitted Roles | Request Body | Success | Error Statuses |
-| :--- | :--- | :---: | :---: | :--- | :---: | :--- |
-| `POST` | `/auth/register` | None | Public | `UserCreate` | `201` | `400` (Email exists) |
-| `POST` | `/auth/login` | None | Public | `OAuth2PasswordRequestForm` | `200` | `401` (Bad creds), `403` (Locked/Banned) |
-| `GET` | `/auth/me` | Bearer | All Roles | None | `200` | `401` (Invalid/Expired token) |
-| `POST` | `/auth/logout` | Bearer | All Roles | None | `200` | `401` (Invalid token) |
-| `GET` | `/courses` | Bearer | All Roles | None | `200` | `401` |
-| `POST` | `/courses` | Bearer | Admin | `CourseCreate` | `201` | `401`, `403` (Non-admin) |
-| `PUT` | `/courses/{id}/faculty` | Bearer | Admin | Query: `faculty_id` | `200` | `401`, `403`, `404` |
-| `POST` | `/enrollments` | Bearer | Student, Admin | `EnrollmentCreate` | `200` | `401`, `403` |
-| `GET` | `/enrollments/my` | Bearer | Student | None | `200` | `401`, `403` |
-| `DELETE`| `/enrollments/{id}` | Bearer | Student (Own), Admin | None | `200` | `401`, `403` (Not owner), `404` |
-| `PUT` | `/enrollments/{id}/grade`| Bearer | Faculty (Assigned), Admin | `GradeUpdate` | `200` | `401`, `403`, `404` |
-| `GET` | `/faculty/courses` | Bearer | Faculty | None | `200` | `401`, `403` |
-| `POST` | `/faculty/courses/{id}/attendance` | Bearer | Faculty | `AttendanceBatch` | `200` | `401`, `403`, `404` |
-| `GET` | `/admin/security/stats` | Bearer | Admin | None | `200` | `401`, `403` |
-| `GET` | `/admin/security/sessions` | Bearer | Admin | None | `200` | `401`, `403` |
-| `POST` | `/admin/security/users/{id}/ban` | Bearer | Admin | `BanRequest` | `200` | `400` (Target is admin), `401`, `403` |
-| `POST` | `/admin/security/force-logout-all` | Bearer | Admin | None | `200` | `401`, `403` |
+> **[Image content — transcribed]**
+>
+> *Title in image:* "EDUCATIONAL PLATFORM USER, COURSE, AND ATTENDANCE MANAGEMENT SYSTEM SCHEMA"
+>
+> Entity boxes shown (PK/FK/UK rows with placeholder-style field labels): **User** (appears twice), **UserSession**, **Semester**, **TokenBlacklist**, **Course**, **Enrollment**, **SecurityEvent** (appears twice), **ClassSession** (appears twice), **Attendance**.
+>
+> Relationship labels on the connectors: *has active*, *generates*, *course_id*, *enrollment_id*, *teaches in*, *enrolls in*, *as classsession_id*.
+>
+> *(The attribute rows inside the boxes are not readable as real column names, e.g. "faculty_id", "foooleean", "datetim"; the real schema is in Table 17.)*
 
-* **Standard Error Format:** All error responses follow standard FastAPI RFC 7807 JSON schema: `{"detail": "Descriptive error message"}`.
+**Table 17: Database Schema Definitions**
 
-### C6. JWT Authentication Design
+- **`users` Table:**
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User Browser
-    participant React as React Frontend
-    participant API as FastAPI Backend
-    participant DB as PostgreSQL Database
+- id (INTEGER, PK, Indexed): Unique user identifier.
 
-    User->>React: Enters credentials & clicks Login
-    React->>API: POST /auth/login (username, password)
-    API->>DB: Query User by email
-    DB-->>API: User record (hash, salt, ban status)
-    Note over API: Checks: Banned? (No)<br/>Locked? (No)<br/>Verify Bcrypt(password + PEPPER)
-    API->>DB: Insert UserSession (jti, IP, client_hint)
-    API->>DB: Insert SecurityEvent (login_success)
-    API-->>React: JSON: {access_token, token_type, role}
-    React->>React: Store token & user in localStorage
-    React-->>User: Redirect to Role Dashboard
+- email (VARCHAR, Unique, Indexed): User login email.
 
-    Note over User, API: Subsequent Protected Request
-    User->>React: Navigates to /admin/security
-    React->>API: GET /admin/security/stats (Header: Bearer JWT)
-    Note over API: get_current_user Dependency:<br/>1. Verify signature (SECRET_KEY)<br/>2. Check expiry (exp)<br/>3. Verify jti NOT in token_blacklist<br/>4. Verify tv >= user.token_version<br/>5. Check user.is_banned == False
-    Note over API: RoleChecker Dependency:<br/>Check user.role == 'admin'
-    API->>DB: Query security statistics
-    DB-->>API: Aggregated metric counts
-    API-->>React: 200 OK: {total_events, active_sessions...}
-    React-->>User: Render Security Center Dashboard
-```
+- password_hash (VARCHAR): Cryptographic Bcrypt hash string.
+
+- role (ENUM: student, faculty, admin): Assigned system role.
+
+- is_banned (BOOLEAN, Default: False): Suspension status flag.
+
+- ban_reason (VARCHAR, Nullable): Mandatory reason for suspension.
+
+- login_attempts (INTEGER, Default: 0): Failed password counter.
+
+- locked_until (TIMESTAMP, Nullable): Lockout expiration timestamp.
+
+- token_version (INTEGER, Default: 0): Counter for global token revocation.
+
+- **`user_sessions` Table:**
+
+- id (INTEGER, PK): Primary key.
+
+- user_id (INTEGER, FK -> users.id, Indexed): Owning user.
+
+- jti (VARCHAR, Unique, Indexed): Cryptographic token identifier.
+
+- ip_address (VARCHAR, Nullable): Client IP address.
+
+- user_agent (VARCHAR, Nullable): Client browser user agent.
+
+- device_hint (VARCHAR, Nullable): Human-readable browser and OS string.
+
+- created_at (TIMESTAMP): Session creation time.
+
+- last_seen (TIMESTAMP): Last activity heartbeat.
+
+- is_active (BOOLEAN, Default: True): Session validity flag.
+
+- **`token_blacklist` Table:**
+
+- id (INTEGER, PK): Primary key.
+
+- jti (VARCHAR, Unique, Indexed): Blacklisted JWT ID.
+
+- user_id (INTEGER, FK -> users.id): Associated user.
+
+- revoked_at (TIMESTAMP): Time of revocation.
+
+- reason (VARCHAR): Revocation cause (user_logout, admin_revoke, user_banned).
+
+- **`security_events` Table:**
+
+- id (INTEGER, PK): Primary key.
+
+- event_type (VARCHAR, Indexed): Event identifier (login_success, login_failed, token_tampered, user_banned, session_revoked, suspicious_activity).
+
+- user_id (INTEGER, FK -> users.id, Nullable): Associated user if identified.
+
+- user_email (VARCHAR, Nullable): Email associated with the event.
+
+- ip_address (VARCHAR, Nullable): Originating IP address.
+
+- detail (VARCHAR, Nullable): Diagnostic event detail.
+
+- severity (VARCHAR, Indexed): info, warning, critical.
+
+- created_at (TIMESTAMP, Indexed): Timestamp of occurrence.
+
+## C5. API Design
+
+**Table 18: REST API Endpoints Specification**
+
+| **Method** | **Path** | **Auth Required** | **Permitted Roles** | **Request Body** | **Success** | **Error Statuses** |
+| --- | --- | --- | --- | --- | --- | --- |
+| POST | /auth/register | None | Public | UserCreate | 201 | 400 (Email exists) |
+| POST | /auth/login | None | Public | OAuth2PasswordRequestForm | 200 | 401 (Bad creds), 403 (Locked/Banned) |
+| GET | /auth/me | Bearer | All Roles | None | 200 | 401 (Invalid/Expired token) |
+| POST | /auth/logout | Bearer | All Roles | None | 200 | 401 (Invalid token) |
+| GET | /courses | Bearer | All Roles | None | 200 | 401 |
+| POST | /courses | Bearer | Admin | CourseCreate | 201 | 401, 403 (Non-admin) |
+| PUT | /courses/{id}/faculty | Bearer | Admin | Query: faculty_id | 200 | 401, 403, 404 |
+| POST | /enrollments | Bearer | Student, Admin | EnrollmentCreate | 200 | 401, 403 |
+| GET | /enrollments/my | Bearer | Student | None | 200 | 401, 403 |
+| DELETE | /enrollments/{id} | Bearer | Student (Own), Admin | None | 200 | 401, 403 (Not owner), 404 |
+| PUT | /enrollments/{id}/grade | Bearer | Faculty (Assigned), Admin | GradeUpdate | 200 | 401, 403, 404 |
+| GET | /faculty/courses | Bearer | Faculty | None | 200 | 401, 403 |
+| POST | /faculty/courses/{id}/attendance | Bearer | Faculty | AttendanceBatch | 200 | 401, 403, 404 |
+| GET | /admin/security/stats | Bearer | Admin | None | 200 | 401, 403 |
+| GET | /admin/security/sessions | Bearer | Admin | None | 200 | 401, 403 |
+| POST | /admin/security/users/{id}/ban | Bearer | Admin | BanRequest | 200 | 400 (Target is admin), 401, 403 |
+| POST | /admin/security/force-logout-all | Bearer | Admin | None | 200 | 401, 403 |
+
+- **Standard Error Format:** All error responses follow standard FastAPI RFC 7807 JSON schema: {"detail": "Descriptive error message"}.
+
+## C6. JWT Authentication Design
+
+![Figure 4: JWT Authentication and Request Validation Sequence Flow](images/fig4_auth_workflow.png)
+
 *Figure 4: JWT Authentication and Request Validation Sequence Flow*
 
-#### Table 19: JWT Payload Claims Schema
-| Claim Key | Claim Name | Data Type | Example Value | Security Purpose |
-| :--- | :--- | :---: | :--- | :--- |
-| `sub` | Subject | `string` | `"admin@university.edu"` | Authenticated user email identity. |
-| `id` | User ID | `integer` | `1` | Primary key for fast relational lookups and ownership checks. |
-| `role` | User Role | `string` | `"admin"` | Immediate role inspection for client UI and backend RBAC. |
-| `name` | Full Name | `string` | `"Admin User"` | Display name for header greetings without database query. |
-| `jti` | JWT ID | `string (UUID)` | `"9b1deb4d-3b7d-4bad..."` | Unique token identifier enabling individual session revocation. |
-| `tv` | Token Version | `integer` | `0` | Enables global emergency force-logout across all user tokens. |
-| `exp` | Expiration Time | `integer (UNIX)`| `1732585200` | Enforces 60-minute automatic token lifespan. |
+> **[Image content — transcribed]**
+>
+> *Title in image:* "SECURE AUTHENTICATION AND AUTHORIZATION WORKFLOW"
+>
+> Participants: **User Browser** · **React Frontend** · **FastAPI Backend** · **PostgreSQL Database**
+>
+> **Phase 1: Initial Login**
+> 1. Enters credentials & clicks Login (User → Frontend)
+> 2. POST /auth/login (username, password) (Frontend → Backend)
+> 3. Query User by email (Backend → DB)
+> 4. User record (hash, salt, ban status) (DB → Backend)
+> - *Note:* Checks: Banned? (No) · Locked? (No) · Verify Bcrypt(password + PEPPER)
+> 6. Insert UserSession (jti, IP, client_hint)
+> 7. Insert SecurityEvent (login_success)
+> 8. JSON: {access_token, token_type, role} (Backend → Frontend)
+> 9. Store token & user in localStorage
+> 10. Redirect to Role Dashboard (Navigation)
+>
+> **Subsequent Protected Request**
+> 11. Navigates to /admin/security
+> 12. GET /admin/security/stats (Header: Bearer JWT)
+> - *Note — get_current_user Dependency:* 1. Verify signature (SECRET_KEY) · 2. Check expiry (exp) · 3. Verify jti NOT in token_blacklist · 4. Verify tv >= user.token_version · 5. Check user.is_banned == False
+> - *Note — RoleChecker Dependency:* Check user.role == 'admin'
+> 15. Query security statistics (Backend → DB)
+> 16. Aggregated metric counts (DB → Backend)
+> 17. 200 OK: {total_events, active_sessions…} (Backend → Frontend)
+> 18. Render Security Center Dashboard (UI Update)
+>
+> Legend: FastAPI · React Frontend · PostgreSQL. *(Step numbers in the image skip 5, 13 and 14.)*
 
-* **Storage Choice & Security Trade-offs:** Access tokens are stored in browser `localStorage` and attached via Axios request interceptors. This choice enables seamless cross-domain connectivity between the decoupled Vercel frontend and Render backend. To mitigate XSS vulnerabilities, the application employs strict input sanitization, avoids rendering unescaped raw HTML (`dangerouslySetInnerHTML`), enforces short 60-minute token lifetimes, and validates every request against the backend session revocation table (`jti`).
+**Table 19: JWT Payload Claims Schema**
 
-### C7. RBAC Design
-Authorization is enforced using a centralized, reusable dependency class (`RoleChecker`) rather than scattered conditional statements across route handlers:
+| **Claim Key** | **Claim Name** | **Data Type** | **Example Value** | **Security Purpose** |
+| --- | --- | --- | --- | --- |
+| sub | Subject | string | "admin@university.edu" | Authenticated user email identity. |
+| id | User ID | integer | 1 | Primary key for fast relational lookups and ownership checks. |
+| role | User Role | string | "admin" | Immediate role inspection for client UI and backend RBAC. |
+| name | Full Name | string | "Admin User" | Display name for header greetings without database query. |
+| jti | JWT ID | string (UUID) | "9b1deb4d-3b7d-4bad..." | Unique token identifier enabling individual session revocation. |
+| tv | Token Version | integer | 0 | Enables global emergency force-logout across all user tokens. |
+| exp | Expiration Time | integer (UNIX) | 1732585200 | Enforces 60-minute automatic token lifespan. |
+
+- **Storage Choice & Security Trade-offs:** Access tokens are stored in browser localStorage and attached via Axios request interceptors. This choice enables seamless cross-domain connectivity between the decoupled Vercel frontend and Render backend. To mitigate XSS vulnerabilities, the application employs strict input sanitization, avoids rendering unescaped raw HTML (dangerouslySetInnerHTML), enforces short 60-minute token lifetimes, and validates every request against the backend session revocation table (jti).
+
+## C7. RBAC Design
+
+Authorization is enforced using a centralized, reusable dependency class (RoleChecker) rather than scattered conditional statements across route handlers:
 
 ```python
 # Reusable RBAC Dependency Class in backend/main.py
@@ -721,168 +737,395 @@ allow_faculty_only = RoleChecker([models.UserRole.faculty])
 allow_student_only = RoleChecker([models.UserRole.student])
 ```
 
-* **Ownership Enforcement in Database Queries:** Object ownership is enforced directly at the SQL query level. For example, student enrollment queries in `/enrollments/my` filter by `models.Enrollment.student_id == current_user.id`. When dropping a course, the route explicitly asserts `if enrollment.student_id != current_user.id and current_user.role != 'admin': raise 403`. Foreign records cannot be modified or read by unauthorized users.
+- **Ownership Enforcement in Database Queries:** Object ownership is enforced directly at the SQL query level. For example, student enrollment queries in /enrollments/my filter by models.Enrollment.student_id == current_user.id. When dropping a course, the route explicitly asserts if enrollment.student_id != current_user.id and current_user.role != 'admin': raise 403. Foreign records cannot be modified or read by unauthorized users.
 
-### C8. Admin Dashboard Design
+## C8. Admin Dashboard Design
 
-#### Table 20: Admin Portal Management Views
-| Admin View Page | Component Path | Endpoints Called | Filters & Controls | Emitted Audit Events |
-| :--- | :--- | :--- | :--- | :--- |
-| **Overview & Metrics** | `AdminDashboard.tsx` | `/courses`, `/users` | Metric summary cards | None (Read-only) |
-| **User Access Control** | `AdminUsers.tsx` | `/users`, `/admin/security/users/{id}/ban` | Search by name/email, Role filter, Status filter | `user_banned`, `user_unbanned` |
-| **Security Center** | `AdminSecurity.tsx` | `/admin/security/stats`, `/sessions`, `/events` | Severity filter, IP search, Event type search | `session_revoked`, `force_logout_all` |
-| **Enrollment Approvals**| `AdminApprovals.tsx`| `/enrollments`, `/enrollments/{id}/status` | Student search, Course section filter | None |
-| **Course Assignments** | `AdminAssignments.tsx`| `/courses`, `/users`, `/courses/{id}/faculty` | Pill filter: `All`, `Assigned`, `Unassigned` | None |
-| **Announcements** | `AdminAnnouncements.tsx`| `/announcements` | Audience filter, Priority filter | None |
-| **Semester Timelines** | `AdminSemesters.tsx` | `/semesters`, `/semesters/{id}/activate` | Active/Inactive timeline filter | None |
+**Table 20: Admin Portal Management Views**
 
-* **CSV Export Capabilities:** In the Faculty Portal (`FacultyCourseDetails.tsx`), cumulative student attendance and analytics data is dynamically converted to a standardized CSV format (`text/csv;charset=utf-8`) respecting active filters and downloaded directly via client-side blob generation.
+| **Admin View Page** | **Component Path** | **Endpoints Called** | **Filters & Controls** | **Emitted Audit Events** |
+| --- | --- | --- | --- | --- |
+| **Overview & Metrics** | AdminDashboard.tsx | /courses, /users | Metric summary cards | None (Read-only) |
+| **User Access Control** | AdminUsers.tsx | /users, /admin/security/users/{id}/ban | Search by name/email, Role filter, Status filter | user_banned, user_unbanned |
+| **Security Center** | AdminSecurity.tsx | /admin/security/stats, /sessions, /events | Severity filter, IP search, Event type search | session_revoked, force_logout_all |
+| **Enrollment Approvals** | AdminApprovals.tsx | /enrollments, /enrollments/{id}/status | Student search, Course section filter | None |
+| **Course Assignments** | AdminAssignments.tsx | /courses, /users, /courses/{id}/faculty | Pill filter: All, Assigned, Unassigned | None |
+| **Announcements** | AdminAnnouncements.tsx | /announcements | Audience filter, Priority filter | None |
+| **Semester Timelines** | AdminSemesters.tsx | /semesters, /semesters/{id}/activate | Active/Inactive timeline filter | None |
 
-### C9. Security Design and Threats (STRIDE Analysis)
+- **CSV Export Capabilities:** In the Faculty Portal (FacultyCourseDetails.tsx), cumulative student attendance and analytics data is dynamically converted to a standardized CSV format (text/csv;charset=utf-8) respecting active filters and downloaded directly via client-side blob generation.
 
-#### Table 21: STRIDE Threat Analysis and Security Defenses
-| Threat Category | Identified Attack Vector | Production Countermeasure | Enforcing File / Code |
-| :--- | :--- | :--- | :--- |
-| **Spoofing** | Forged JWT Token | Tokens signed with `HS256` and secret key; invalid signatures rejected with 401. | `backend/main.py:277` |
-| **Tampering** | Role Elevation in JWT | Tampered claims break signature verification, writing a `token_tampered` audit event. | `backend/main.py:293` |
-| **Repudiation** | Denying an Administrative Action | Actions (bans, logouts, session revocations) write immutable records to `security_events`. | `models.SecurityEvent` |
-| **Information Disclosure** | Database Breach Exposing Hashes | Passwords protected with **Bcrypt + Server Pepper**; hashes uncrackable without secret pepper. | `backend/auth.py:PEPPER` |
-| **Denial of Service** | Credential Brute-Forcing | 5 consecutive failed logins trigger 30-minute lockout on `models.User.locked_until`. | `backend/main.py:474` |
-| **Elevation of Privilege** | Student Calling Admin API | Enforced on every endpoint via `Depends(allow_admin_only)` returning `HTTP 403`. | `backend/main.py:590` |
-| **Session Hijacking** | Stolen Active Bearer Token | Client IP address checked against session origin IP; mismatches log `suspicious_activity`. | `backend/main.py:394` |
-| **SQL Injection** | SQL Query Manipulation | 100% of queries use SQLAlchemy parameterized queries and ORM abstractions. | `backend/main.py` |
+## C9. Security Design and Threats (STRIDE Analysis)
 
-### C10. Deployment on Vercel & Render
+**Table 21: STRIDE Threat Analysis and Security Defenses**
 
-```mermaid
-flowchart LR
-    subgraph Client Access
-        Browser["User Browser"]
-    end
+| **Threat Category** | **Identified Attack Vector** | **Production Countermeasure** | **Enforcing File / Code** |
+| --- | --- | --- | --- |
+| **Spoofing** | Forged JWT Token | Tokens signed with HS256 and secret key; invalid signatures rejected with 401. | backend/main.py:277 |
+| **Tampering** | Role Elevation in JWT | Tampered claims break signature verification, writing a token_tampered audit event. | backend/main.py:293 |
+| **Repudiation** | Denying an Administrative Action | Actions (bans, logouts, session revocations) write immutable records to security_events. | models.SecurityEvent |
+| **Information Disclosure** | Database Breach Exposing Hashes | Passwords protected with **Bcrypt + Server Pepper**; hashes uncrackable without secret pepper. | backend/auth.py:PEPPER |
+| **Denial of Service** | Credential Brute-Forcing | 5 consecutive failed logins trigger 30-minute lockout on models.User.locked_until. | backend/main.py:474 |
+| **Elevation of Privilege** | Student Calling Admin API | Enforced on every endpoint via Depends(allow_admin_only) returning HTTP 403. | backend/main.py:590 |
+| **Session Hijacking** | Stolen Active Bearer Token | Client IP address checked against session origin IP; mismatches log suspicious_activity. | backend/main.py:394 |
+| **SQL Injection** | SQL Query Manipulation | 100% of queries use SQLAlchemy parameterized queries and ORM abstractions. | backend/main.py |
 
-    subgraph Vercel Edge Network
-        VercelApp["2310176-course-enroll.vercel.app\n(Frontend SPA Engine)"]
-        VercelConfig["vercel.json\n(Client-side Routing Rewrites)"]
-    end
+## C10. Deployment on Vercel & Render
 
-    subgraph Render Cloud
-        FastAPIApp["two310176-courseenroll.onrender.com\n(Python ASGI Web Service)"]
-        EnvConfig["Environment Variables:\nSECRET_KEY, PASSWORD_PEPPER, DATABASE_URL"]
-    end
+![Figure 6: Multi-Cloud Production Deployment Architecture](images/fig6_deployment_architecture.png)
 
-    subgraph Supabase Cloud
-        PostgresDB[("PostgreSQL 16 DB\n(Persistent Storage)")]
-    end
-
-    Browser --> VercelApp
-    VercelApp -.-> VercelConfig
-    VercelApp --> FastAPIApp
-    FastAPIApp -.-> EnvConfig
-    FastAPIApp --> PostgresDB
-```
 *Figure 6: Multi-Cloud Production Deployment Architecture*
 
-#### Table 22: Production Environment Variables
-| Variable Name | Environment | Purpose | Sensitivity Level |
-| :--- | :--- | :--- | :---: |
-| `SECRET_KEY` | Render (Backend) | Cryptographic secret used to sign and verify HMAC-SHA256 JWT tokens. | **Critical** |
-| `PASSWORD_PEPPER` | Render (Backend) | Server-side secret pepper appended to passwords prior to Bcrypt hashing. | **Critical** |
-| `DATABASE_URL` | Render (Backend) | PostgreSQL connection string including SSL credentials to Supabase cluster. | **Critical** |
-| `VITE_API_URL` | Vercel (Frontend) | Public REST API base URL (`https://two310176-courseenroll.onrender.com`). | Public |
+> **[Image content — transcribed]**
+>
+> **Client Access:** User Browser → 
+> **Vercel Edge Network:** `2310176-course-enroll.vercel.app` (Frontend SPA Engine) ┄ `vercel.json` (Client-side Routing Rewrites) → 
+> **Render Cloud:** `two310176-courseenroll.onrender.com` (Python ASGI Web Service) ┄ Environment Variables: SECRET_KEY, PASSWORD_PEPPER, DATABASE_URL
+> **Supabase Cloud:** PostgreSQL 16 DB (Persistent Storage) ← Render web service
 
-### C11. Automated Testing
+**Table 22: Production Environment Variables**
 
-#### Table 23: Automated Pytest Test Results
-*Test Execution Command:* `.venv\Scripts\python.exe -m pytest tests/test_auth_and_rbac.py -v`
+| **Variable Name** | **Environment** | **Purpose** | **Sensitivity Level** |
+| --- | --- | --- | --- |
+| SECRET_KEY | Render (Backend) | Cryptographic secret used to sign and verify HMAC-SHA256 JWT tokens. | **Critical** |
+| PASSWORD_PEPPER | Render (Backend) | Server-side secret pepper appended to passwords prior to Bcrypt hashing. | **Critical** |
+| DATABASE_URL | Render (Backend) | PostgreSQL connection string including SSL credentials to Supabase cluster. | **Critical** |
+| VITE_API_URL | Vercel (Frontend) | Public REST API base URL (https://two310176-courseenroll.onrender.com). | Public |
 
-| Test Suite & Test Name | Target Requirement | Execution Result | Verification Status |
-| :--- | :--- | :---: | :---: |
-| `test_login_success_returns_jwt` | `FR-AUTH-03` | **PASSED** | Access token issued with bearer type and valid role. |
-| `test_login_failure_invalid_password` | `FR-AUTH-06` | **PASSED** | Returns `401 Unauthorized` with generic error message. |
-| `test_missing_token_rejection` | `FR-AUTH-09` | **PASSED** | Unauthenticated call to `/auth/me` rejected with `401`. |
-| `test_tampered_token_rejection` | `FR-AUTH-09` | **PASSED** | Forged signature rejected with `401` and audit logged. |
-| `test_rbac_rule_1_student_blocked_from_admin_security` | `FR-RBAC-02` | **PASSED** | Student accessing `/admin/security/stats` rejected with `403`. |
-| `test_rbac_rule_2_student_blocked_from_broadcasting_announcements` | `FR-RBAC-02` | **PASSED** | Student broadcasting notices rejected with `403`. |
-| `test_rbac_rule_3_faculty_blocked_from_admin_user_management` | `FR-RBAC-02` | **PASSED** | Faculty triggering force-logout rejected with `403`. |
-| `test_rbac_rule_4_safety_admin_cannot_ban_admin` | `FR-RBAC-05` | **PASSED** | Admin banning admin rejected with `400 Bad Request`. |
+## C11. Automated Testing
+
+**Table 23: Automated Pytest Test Results**
+
+*Test Execution Command:* .venv\Scripts\python.exe -m pytest tests/test_auth_and_rbac.py -v
+
+| **Test Suite & Test Name** | **Target Requirement** | **Execution Result** | **Verification Status** |
+| --- | --- | --- | --- |
+| test_login_success_returns_jwt | FR-AUTH-03 | **PASSED** | Access token issued with bearer type and valid role. |
+| test_login_failure_invalid_password | FR-AUTH-06 | **PASSED** | Returns 401 Unauthorized with generic error message. |
+| test_missing_token_rejection | FR-AUTH-09 | **PASSED** | Unauthenticated call to /auth/me rejected with 401. |
+| test_tampered_token_rejection | FR-AUTH-09 | **PASSED** | Forged signature rejected with 401 and audit logged. |
+| test_rbac_rule_1_student_blocked_from_admin_security | FR-RBAC-02 | **PASSED** | Student accessing /admin/security/stats rejected with 403. |
+| test_rbac_rule_2_student_blocked_from_broadcasting_announcements | FR-RBAC-02 | **PASSED** | Student broadcasting notices rejected with 403. |
+| test_rbac_rule_3_faculty_blocked_from_admin_user_management | FR-RBAC-02 | **PASSED** | Faculty triggering force-logout rejected with 403. |
+| test_rbac_rule_4_safety_admin_cannot_ban_admin | FR-RBAC-05 | **PASSED** | Admin banning admin rejected with 400 Bad Request. |
 
 **Summary:** 8 passed in 16.21s with 100% test pass rate across all core security and RBAC invariants.
 
----
-
 # Part D. Evidence: Screenshots of Running Application
+
 *(Note: Full resolution image captures are embedded in the accompanying PDF submission. The descriptions below detail each verified screenshot, its test capture condition on `https://2310176-course-enroll.vercel.app`, and requirement references).*
 
-### D1. User Side
-* **[Screenshot S1]: Authentication Page & Validation Handling (`FR-AUTH-03`, `FR-AUTH-06`)**  
-  *Caption:* The CourseEnroll login interface demonstrating input validation, showing an active error alert when invalid credentials are submitted, and highlighting secure password masking.
-* **[Screenshot S2]: Student Course Catalog & Ownership Data Isolation (`FR-DOMAIN-01`, `FR-RBAC-03`)**  
-  *Caption:* Logged in as student `mila@gmail.com`, showing only her personal registrations, credit progress metrics, and course registration statuses (`Approved`, `Pending`, `Waitlisted`).
-* **[Screenshot S3]: Weekly Timetable Schedule Matrix (`FR-DOMAIN-04`)**  
-  *Caption:* The visual weekly timetable grid displaying scheduled class periods across days and lecture halls with verification print action.
-* **[Screenshot S4]: Active Device Sessions Console (`FR-AUTH-07`, `FR-ADM-06`)**  
-  *Caption:* Active sessions view displaying logged-in devices with IP addresses, browser user-agent hints, creation timestamps, and individual session revocation buttons.
-* **[Screenshot S5]: Faculty Class Management Portal (`FR-DOMAIN-06`, `FR-DOMAIN-07`)**  
-  *Caption:* Faculty portal for course `CSE220` showing student roster, daily roll call interface (Present/Late/Absent), live attendance percentages, and CSV export action.
-* **[Screenshot S6]: RBAC Denial Enforcement (`FR-RBAC-02`)**  
-  *Caption:* Student attempting to navigate to `/admin/security`, showing immediate redirect and DevTools Network tab capturing the `HTTP 403 Forbidden` response.
+## D1. User Side
 
-### D2. Security Behaviour
-* **[Screenshot S7]: Bearer Token Header & Expired Token 401 Rejection (`FR-AUTH-09`)**  
-  *Caption:* Browser DevTools Network tab showing `Authorization: Bearer <token>` header transmission and the server returning `HTTP 401 Unauthorized: Token expired`.
-* **[Screenshot S8]: SWR Cache & Instantaneous Session Recovery (`NFR-PERF-01`)**  
-  *Caption:* Frontend application restoring authenticated session state without visual guest flicker, verified via DevTools application storage inspection.
-* **[Screenshot S9]: Immediate Banned User Rejection (`FR-RBAC-07`)**  
-  *Caption:* A student account banned by the administrator issuing an API call; the server immediately blocks the request with `HTTP 401 Account suspended: Contact administrator`.
+**FIGURE S1: AUTHENTICATION PAGE & VALIDATION HANDLING**
 
-### D3. Admin Dashboard
-* **[Screenshot S10]: Admin Dashboard Overview & Institutional Metrics (`FR-ADM-01`)**  
-  *Caption:* Administrative control center showing total courses, registered students, active faculty, and quick-navigation control modules.
-* **[Screenshot S11]: User Management with Search, Role Filters, and Status Toggles (`FR-ADM-02`)**  
-  *Caption:* The redesigned user management table showing live search filtering, role dropdowns (`Student`, `Faculty`, `Admin`), and active status badges.
-* **[Screenshot S12]: Ban User Modal Dialog with Mandatory Reason (`FR-ADM-03`)**  
-  *Caption:* Administrator triggering the suspension modal for a user, entering a policy violation reason, and confirming immediate session termination.
-* **[Screenshot S13]: Administrator Safety Invariant Enforcement (`FR-RBAC-05`)**  
-  *Caption:* Administrator attempting to ban a fellow admin account, showing system rejection modal: `"Administrator accounts cannot be banned"`.
-* **[Screenshot S14]: Pending Enrollment Approvals Queue (`FR-ADM-09`)**  
-  *Caption:* Registrar queue showing pending course registration requests with one-click Approve and Reject administrative actions.
-* **[Screenshot S15]: Security Events Audit Log (`FR-ADM-05`)**  
-  *Caption:* Real-time audit log table showing recorded security events (`login_success`, `login_failed`, `token_tampered`, `user_banned`) with IP addresses and severity tags.
-* **[Screenshot S16]: Security Center Active Sessions & Force Logout All (`FR-AUTH-10`, `FR-ADM-07`)**  
-  *Caption:* Security Center showing system-wide active sessions alongside the emergency *"Force Logout All Users"* Danger Zone control.
-* **[Screenshot S17]: CSV Export Output Opened in Spreadsheet Editor (`FR-DOMAIN-07`)**  
-  *Caption:* The downloaded attendance CSV file opened in Microsoft Excel / LibreOffice showing student names, present counts, absent counts, and attendance rates.
+*Requirement Mappings:* `FR-AUTH-03`, `FR-AUTH-06`
 
-### D4. Deployment
-* **[Screenshot S18]: Production Vercel Frontend Deployment (`C10`)**  
-  *Caption:* Vercel project management console showing production deployment status, custom domain `https://2310176-course-enroll.vercel.app`, and clean build logs.
-* **[Screenshot S19]: Render Backend Web Service Configuration (`C10`)**  
-  *Caption:* Render web service dashboard showing healthy service status, continuous deployment from GitHub branch `main`, and environment variables list.
-* **[Screenshot S20]: Interactive Swagger OpenAPI Documentation Page (`C5`)**  
-  *Caption:* The live interactive documentation at `https://two310176-courseenroll.onrender.com/docs` displaying all functional API endpoints.
+![Figure S1](images/S01_login_validation.png)
 
-### D5. Tests
-* **[Screenshot S21]: Automated Pytest Execution Output (`C11`)**  
-  *Caption:* Terminal console output showing `pytest tests/test_auth_and_rbac.py` completing with 8 passed tests and 100% test coverage over security rules.
+**Verification Proof & Caption:** The CourseEnroll login interface demonstrating input validation, showing an active error alert when invalid credentials are submitted, and highlighting secure password masking.
 
----
+> **[Image content — transcribed]**
+>
+> Login page "Welcome back!" (chalkboard background) with tabs **Student / Faculty / Admin** (Admin selected). Email: `rai@gmail.com`, password masked, button **Sign in as Admin**.
+>
+> Red toast (top right): *Role mismatch! This account is registered as "STUDENT", not "ADMIN". Please select the student tab.*
+
+**FIGURE S2: STUDENT COURSE CATALOG & OWNERSHIP DATA ISOLATION**
+
+*Requirement Mappings:* `FR-DOMAIN-01`, `FR-RBAC-03`
+
+![Figure S2](images/S02_student_course_catalog.png)
+
+**Verification Proof & Caption:** Logged in as student `mila@gmail.com`, showing only her personal registrations, credit progress metrics, and course registration statuses (`Approved`, `Pending`, `Waitlisted`).
+
+> **[Image content — transcribed]**
+>
+> Student **Mila Vance** (`mila@gmail.com`, STUDENT, Active). Page: **Course Catalog** — "Browse available university courses, review weekly schedules, and request registration or join the waitlist." Search box, *All Availability*, *All Credits*, counter "Catalog: 25 of 25 courses". Sidebar: Dashboard, Course Catalog, My Enrollments, Weekly Schedule, Inbox (3), Study Groups, Profile & Sessions.
+>
+> Cards: **CSE472** Cloud Computing & DevOps (3 Credits, APPROVED, Tue,Thu 11:30–13:00, Lab 501, 29 / 18 Seats, "Enrolled in Schedule") · **CSE425** Software Quality & Testing (3 Credits, Waitlisted, Sun,Tue 14:30–16:00, Lab 302, 21 / 12 Seats, "In Automatic Waitlist") · **CSE485** Cybersecurity & Cryptography (3 Credits, PENDING, Sun,Tue 16:00–17:30, Lab 401, 15 / 25 Seats, "Request Pending") · **CSE499** Senior Capstone Design Project (4 Credits, "Full (4 on Waitlist)", Tue,Thu 16:00–17:30, Auditorium B, 20 / 10 Seats) · **MAT120** Calculus & Analytical Geometry (3 Credits, APPROVED, Mon,Wed 08:30–10:00, Hall 104, 13 / 45 Seats) · **MAT212** Linear Algebra (3 Credits, APPROVED, Tue,Thu 08:30–10:00, Hall 106, 10 / 40 Seats).
+
+**FIGURE S3: WEEKLY TIMETABLE SCHEDULE MATRIX**
+
+*Requirement Mappings:* `FR-DOMAIN-04`
+
+![Figure S3](images/S03_weekly_timetable.png)
+
+**Verification Proof & Caption:** The visual weekly timetable grid displaying scheduled class periods across days and lecture halls with verification print action.
+
+> **[Image content — transcribed]**
+>
+> Student Mila Vance, page **Weekly Schedule**. Red banner **"Schedule Time Conflict Detected!"** — "The following courses share overlapping hours on your timetable. Please adjust your registration:"
+> - MON: MAT120 (08:30 - 10:00) conflicts with CSE215 (08:30 - 10:00)
+> - WED: MAT120 (08:30 - 10:00) conflicts with CSE215 (08:30 - 10:00)
+> - TUE: MAT212 (08:30 - 10:00) conflicts with ACN201 (08:30 - 10:00)
+> - TUE: MAT212 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
+> - SUN: ACN201 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
+> - TUE: ACN201 (08:30 - 10:00) conflicts with CSE115 (08:30 - 10:00)
+>
+> Timetable grid (Time × Sunday–Thursday): 08:00 row — ACN201 Principles of Accounting (Hall 105), CSE115 Programming Language I (Lab 201), MAT120 Calculus & Analytical Geometry (Hall 104), CSE215 Programming Language II (Java) (Lab 202), MAT212 Linear Algebra (Hall 106); 10:00 row (10:00–11:30) — CSE201 Discrete Mathematics (Hall 102), CSE311 Database Management Systems (Lab 305). Conflicting cards are red; each card shows code, time, title, room and credits.
+
+**FIGURE S4: ACTIVE DEVICE SESSIONS CONSOLE**
+
+*Requirement Mappings:* `FR-AUTH-07`, `FR-ADM-06`
+
+![Figure S4](images/S04_active_device_sessions.png)
+
+**Verification Proof & Caption:** Active sessions view displaying logged-in devices with IP addresses, browser user-agent hints, creation timestamps, and individual session revocation buttons.
+
+> **[Image content — transcribed]**
+>
+> Student Mila Vance, page **Profile & Sessions**, section **My Login Sessions** (with *Refresh* button; *Update Password* button above). Columns: DEVICE · IP ADDRESS · LAST SEEN · STATUS · ACTION.
+>
+> Rows: "Chrome on Windows" with IPs 103.127.7.152 / 127.0.0.1 / 103.81.69.232 and "Unknown Browser on Unknown OS" with IP `testclient`; last-seen dates 11/18/2026 – 11/27/2026 (e.g. 11/27/2026, 9:03:27 PM). Status badge **Active** (with **Revoke** button) or **Revoked** (no button).
+
+**FIGURE S5: FACULTY CLASS MANAGEMENT PORTAL**
+
+*Requirement Mappings:* `FR-DOMAIN-06`, `FR-DOMAIN-07`
+
+![Figure S5](images/S05_faculty_attendance_portal.png)
+
+**Verification Proof & Caption:** Faculty portal for course `CSE220` showing student roster, daily roll call interface (Present/Late/Absent), live attendance percentages, and CSV export action.
+
+> **[Image content — transcribed]**
+>
+> Faculty **Sayef Reyadh** (`sreyadh@gmail.com`, FACULTY). Page **My Classes** with tabs *Roster & Grading (29)*, **Session Attendance** (active), *Attendance Analytics*. Search box, counter "Students: 29 of 29".
+>
+> Session selector: "10/21/2026 07:32 PM - Graph Search Algorithms: Breadth-First & Depth-First Traversals", buttons **+ New Session** and **Save Attendance**. Quick Actions: Mark All Present / Mark All Late / Mark All Absent. Summary: Total: 29 · Present: 27 · Late: 0 · Absent: 2 · Rate: 93%.
+>
+> Table: STUDENT NAME · PRESENT (1.0) · LATE (0.5) · ABSENT (0.0) with radio buttons — Mila Vance, Raihanur Akter (`rai@gmail.com`), Mishu Ahmed, Kafi Hassan (all set to Present in view). *(The course code CSE220 is not visible in this crop.)*
+
+**FIGURE S6: RBAC DENIAL ENFORCEMENT**
+
+*Requirement Mappings:* `FR-RBAC-02`
+
+![Figure S6](images/S06_rbac_denial.png)
+
+**Verification Proof & Caption:** Student attempting to navigate to `/admin/security`, showing immediate redirect and DevTools Network tab capturing the `HTTP 403 Forbidden` response.
+
+> **[Image content — transcribed]**
+>
+> Admin User (`admin@university.edu`, ADMIN), **Security Center** (sidebar: Dashboard, Semesters, Approvals, Manage Courses, Assignments, User Management, Announcements, Security Center, Study Groups, Profile & Sessions). Audit-log rows (11/26/2026 – 11/27/2026): *Login Success*, *Failed Login (Failed attempt #1)*, *token tampered (Malformed or tampered JWT…)*, *Logout*, *Suspicious Activity (IP mismatch detected…; Automated or brute-force tok…)*; IPs `testclient` / `127.0.0.1`; user agents incl. PostmanRuntime/2.17.1; severity tags INFO / WARNING / HIGH / CRITICAL.
+
+## D2. Security Behaviour
+
+**FIGURE S7: BEARER TOKEN HEADER & EXPIRED TOKEN 401 REJECTION**
+
+*Requirement Mappings:* `FR-AUTH-09`
+
+![Figure S7](images/S07_bearer_token_401.png)
+
+**Verification Proof & Caption:** Browser DevTools Network tab showing `Authorization: Bearer <token>` header transmission and the server returning `HTTP 401 Unauthorized: Token expired`.
+
+> **[Image content — transcribed]**
+>
+> Left: login page, **Student** tab, email `rai@gmail.com`, short masked password, button **Sign in as Student**.
+>
+> Right: Chrome DevTools → Network (Fetch/XHR) listing events?limit=50&offset=0, stats, failed-logins-summary, logout, **login**. Selected request headers: Request URL `https://two310176-courseenroll.onrender.com/auth/login`, Request Method **POST**, Status Code **401 Unauthorized**, Remote Address 216.24.57.16:443; response headers include Access-Control-Allow-Origin `https://2310176-course-enroll.vercel.app`, Content-Type application/json, Content-Length 44, Date Fri, 27 Nov 2026 21:08:10 GMT, Server cloudflare. Footer: 7 requests, 5.4 kB transferred.
+
+**FIGURE S8: SWR CACHE & INSTANTANEOUS SESSION RECOVERY**
+
+*Requirement Mappings:* `NFR-PERF-01`
+
+![Figure S8](images/S08_swr_cache_session.png)
+
+**Verification Proof & Caption:** Frontend application restoring authenticated session state without visual guest flicker, verified via DevTools application storage inspection.
+
+> **[Image content — transcribed]**
+>
+> Admin User, page **Profile & Sessions** → **My Login Sessions** table (DEVICE · IP ADDRESS · LAST SEEN · STATUS · ACTION): "Chrome on Windows" (103.127.7.152, 127.0.0.1) and "Unknown Browser on Unknown OS" (`testclient`, 127.0.0.1) rows dated 11/26–11/27/2026, status Active (with Revoke) or Revoked.
+
+**FIGURE S9: IMMEDIATE BANNED USER REJECTION**
+
+*Requirement Mappings:* `FR-RBAC-07`
+
+![Figure S9](images/S09_banned_user_rejection.png)
+
+**Verification Proof & Caption:** A student account banned by the administrator issuing an API call; the server immediately blocks the request with `HTTP 401 Account suspended: Contact administrator`.
+
+> **[Image content — transcribed]**
+>
+> Login page, **Student** tab, email `rai@gmail.com`, masked password. Red toast (top right): **"Account suspended by administrator"**.
+
+## D3. Admin Dashboard
+
+**FIGURE S10: ADMIN DASHBOARD OVERVIEW & INSTITUTIONAL METRICS**
+
+*Requirement Mappings:* `FR-ADM-01`
+
+![Figure S10](images/S10_admin_dashboard_overview.png)
+
+**Verification Proof & Caption:** Administrative control center showing total courses, registered students, active faculty, and quick-navigation control modules.
+
+> **[Image content — transcribed]**
+>
+> **Admin Control Center** — "Oversee university course catalogs, manage capacities, and assign faculty instructors." Metric cards: TOTAL COURSES **25** · REGISTERED STUDENTS **35** · ACTIVE FACULTY **15** · TOTAL USERS (7D NEW) **52 (+52)** · BANNED USERS **1** · ENROLLMENTS / GROUPS **359 / 1**.
+>
+> Module cards: REGISTRY — Manage Courses ("Create new course offerings, update credit hours, and remove discontinued classes.", button *Manage Catalog →*); ASSIGNMENTS — Faculty Assignment ("Assign registered faculty members to teach specific course sections.", *Manage Assignments →*); SECURITY & AUDIT — Security Center ("Track active devices, audit login events, ban malicious users, and control system sessions.", *Open Security Center →*); COMMUNICATIONS — Announcements & Alerts ("Broadcast emergency notices, registration deadlines, and messages directly to student and faculty inboxes.").
+
+**FIGURE S11: USER MANAGEMENT WITH SEARCH, ROLE FILTERS, AND STATUS TOGGLES**
+
+*Requirement Mappings:* `FR-ADM-02`
+
+![Figure S11](images/S11_user_management.png)
+
+**Verification Proof & Caption:** The redesigned user management table showing live search filtering, role dropdowns (`Student`, `Faculty`, `Admin`), and active status badges.
+
+> **[Image content — transcribed]**
+>
+> **User Management** — "Manage students, faculty, and administrative accounts." Search by name or email, *All Roles*, *All Statuses*, counter "Users: 52 of 52", **Export CSV**, **+ Add User**.
+>
+> Columns: SELECT · NAME · EMAIL · ROLE · STATUS · ACTIONS (Details / Edit / Ban / Remove). Rows: Mishu Ahmed (`mishu@gmail.com`, Student), Laila Noor (`laila@gmail.com`, Student), Farhan Habib (`habibf@gmail.com`, Faculty), Alex Turner (`alex@gmail.com`, Student), Sophia Chen (`sophia@gmail.com`, Student), Prof. Liam O'Connor (`loconnor@university.edu`, Faculty), Dr. Wei Zhang (`wzhang@university.edu`, Faculty) — all Active.
+
+**FIGURE S12: BAN USER MODAL DIALOG WITH MANDATORY REASON**
+
+*Requirement Mappings:* `FR-ADM-03`
+
+![Figure S12](images/S12_ban_user_modal.png)
+
+**Verification Proof & Caption:** Administrator triggering the suspension modal for a user, entering a policy violation reason, and confirming immediate session termination.
+
+> **[Image content — transcribed]**
+>
+> Modal **"Ban User Account"**: red notice "Are you sure you want to suspend **Mishu Ahmed** (mishu@gmail.com)? Their active sessions will be terminated and they will be blocked from accessing the system immediately." Field SUSPENSION REASON = "u have been banned for unwanted reason". Buttons **Cancel** and **Confirm Ban**.
+
+**FIGURE S13: ADMINISTRATOR SAFETY INVARIANT ENFORCEMENT**
+
+*Requirement Mappings:* `FR-RBAC-05`
+
+![Figure S13](images/S13_admin_safety_invariant.png)
+
+**Verification Proof & Caption:** Administrator attempting to ban a fellow admin account, showing system rejection modal: `"Administrator accounts cannot be banned"`.
+
+> **[Image content — transcribed]**
+>
+> **Security Center → Overview** (tabs: Overview, Active Sessions, Security Events, User Access Control, Content Moderation). Cards: Total Events **287** · Critical (24h) **1** · Active Sessions **22** · Banned Users **1** · Failed Logins (24h) **2**.
+>
+> **Danger Zone:** "Force logout all currently active sessions system-wide. Users will need to log in again." with red button **Force Logout All Users**.
+>
+> Failed Logins by IP: 127.0.0.1 — 17; testclient — 10; 103.127.7.152 — 7. Failed Logins by Account: admin@university.edu 11, rai@gmail.com 6, loconnor@university.edu 3, bjackson@university.edu 2, srahman@gmail.com 1, escott@university.edu 1, awhite@university.edu 1, ajohnson@university.edu 1, mmiller@university.edu 1, psharma@university.edu 1, cat@gmail.com 1 …
+
+**FIGURE S14: PENDING ENROLLMENT APPROVALS QUEUE**
+
+*Requirement Mappings:* `FR-ADM-09`
+
+![Figure S14](images/S14_pending_enrollment_approvals.png)
+
+**Verification Proof & Caption:** Registrar queue showing pending course registration requests with one-click Approve and Reject administrative actions.
+
+> **[Image content — transcribed]**
+>
+> **Enrollment Approvals** — "Review and process pending student course registrations." Search, *All Courses* filter, counter "Pending: 18 of 18". Columns STUDENT · COURSE · STATUS · ACTIONS with green **Approve** and **Reject** buttons. Rows (all Pending): Mila Vance — CSE485 Cybersecurity & Cryptography; Mila Vance — PHY108 General Physics II (Electromagnetism); Mia Wilson — CSE115 Programming Language I; Charlotte Robinson — CSE220 Data Structures & Algorithms; Cat Williams — CSE313 Compiler Design; Mishu Ahmed — CSE415 Artificial Intelligence & Heuristics; Mason Miller — CSE485 Cybersecurity & Cryptography.
+
+**FIGURE S15: SECURITY EVENTS AUDIT LOG**
+
+*Requirement Mappings:* `FR-ADM-05`
+
+![Figure S15](images/S15_security_events_audit_log.png)
+
+**Verification Proof & Caption:** Real-time audit log table showing recorded security events (`login_success`, `login_failed`, `token_tampered`, `user_banned`) with IP addresses and severity tags.
+
+> **[Image content — transcribed]**
+>
+> **Security Center → Security Events** tab: search box, *All Severities*, counter "Events: 50 of 50", **Export CSV**, **Refresh**. Columns TIMESTAMP · EVENT TYPE · USER · IP ADDRESS · BROWSER / UA · DETAILS · SEVERITY. Rows (11/27/2026): 9:12:25 PM **User Banned** rai@gmail.com, 103.127.7.152, "Banned by admin@university…", **CRITICAL** · 9:11:54 PM Login Success rai@gmail.com (INFO) · 9:10:39 PM Login Success admin@university.edu (INFO) · 9:08:09 PM **Failed Login** rai@gmail.com "Failed attempt #1" (WARNING) · 9:08:03 PM Logout admin · 9:06:35 PM Login Success admin · 9:06:25 PM Logout mila@gmail.com · 9:05:52 PM Login Success mila@gmail.com · 9:05:41 PM Logout sreyadh@gmail.com.
+
+**FIGURE S16: SECURITY CENTER ACTIVE SESSIONS & FORCE LOGOUT ALL**
+
+*Requirement Mappings:* `FR-AUTH-10`, `FR-ADM-07`
+
+![Figure S16](images/S16_security_center_force_logout.png)
+
+**Verification Proof & Caption:** Security Center showing system-wide active sessions alongside the emergency *"Force Logout All Users"* Danger Zone control.
+
+> **[Image content — transcribed]**
+>
+> Cropped **Security Center → Overview**: cards Total Events 287 · Critical (24h) 1 · Active Sessions 22 · Banned Users 1 · Failed Logins (24h) 2, and the red **Danger Zone** box with button **Force Logout All Users**.
+
+**FIGURE S17: CSV EXPORT OUTPUT OPENED IN SPREADSHEET EDITOR**
+
+*Requirement Mappings:* `FR-DOMAIN-07`
+
+![Figure S17](images/S17_csv_export_output.png)
+
+**Verification Proof & Caption:** The downloaded attendance CSV file opened in Microsoft Excel / LibreOffice showing student names, present counts, absent counts, and attendance rates.
+
+> **[Image content — transcribed]**
+>
+> **User Management** page (Admin User) with a Chrome downloads popup at the top: **users_export.csv** (2,863 B • Done) and a second download "Copy of Project Submission Report Sample (PLEASE MAKE YOUR OWN COPY) (1).docx" (336 KB • 2 hours ago). Windows taskbar visible, clock 3:18 AM. *(The image shows the CSV download from User Management, not a CSV opened in a spreadsheet editor.)*
+
+## D4. Deployment
+
+**FIGURE S18: PRODUCTION VERCEL FRONTEND DEPLOYMENT**
+
+*Requirement Mappings:* `C10`
+
+![Figure S18](images/S18_vercel_deployment.png)
+
+**Verification Proof & Caption:** Vercel project management console showing production deployment status, custom domain `https://2310176-course-enroll.vercel.app`, and clean build logs.
+
+> **[Image content — transcribed]**
+>
+> **Vercel dashboard** — project/team "Ninja Pr4o" (Hobby), page **Deployments**; filters: Author `2310176-3846`, Environment Production, Status Error. All listed deployments of **2310176-course-enroll** are **Ready**: "Complete JWT refresh, reusable RBAC, stu…" `6a16645` main (Production, 3h ago) · "docs: generate and populate official submis…" `e2510da` (Nov 24) · "docs: add comprehensive final project subm…" `d7cc086` (Nov 24) · "feat(ui): redesign search & filter system wit…" `67562db` (Nov 19) · "feat: add comprehensive search, filters, cou…" `eec8fd3` · "fix: expose is_banned in UserResponse, add…" `b827a99` · "perf: implement lightning fast in-memory au…" `72f2930` · "fix(deploy): add psycopg 3 to requirements" `73cab1a` · "docs: comprehensive README with test ac…" `d159843` · Preview builds on feature branches: "fix: announcement popup flicker, faculty att…" `6f8c1d5`, "feat(data): add automated demo database s…" `13b92c2`.
+
+**FIGURE S19: RENDER BACKEND WEB SERVICE CONFIGURATION**
+
+*Requirement Mappings:* `C10`
+
+![Figure S19](images/S19_render_service.png)
+
+**Verification Proof & Caption:** Render web service dashboard showing healthy service status, continuous deployment from GitHub branch `main`, and environment variables list.
+
+> **[Image content — transcribed]**
+>
+> **Render dashboard** — Web Service **2310176-CourseEnroll** (Python 3, Free). Service ID `srv-dbjqgsvb9u1s73epsbjg`; repo raihanurakter02 / 2310176-CourseEnroll, branch main, commit `6a16645`, status **Live**; URL `https://two310176-courseenroll.onrender.com`. Banner: "Your free instance will spin down with inactivity, which can delay requests by 50 seconds or more." Deploys (26 total): "Complete JWT refresh, reusable RBAC, study groups, admin moderation, CSV exports, …" `6a16645` (2h ago, Auto-Deploy, 1m 23s) · "docs: generate and populate official submission Word report (.docx) for IUB CSE309" `e2510da` (4d ago, 1m 11s, Rollback) · "docs: add comprehensive final project submission report adhering to IUB CSE309 tem…" `d7cc086` (4d ago, 1m 12s, Rollback). *(The environment-variables list is not visible in this crop.)*
+
+**FIGURE S20: INTERACTIVE SWAGGER OPENAPI DOCUMENTATION PAGE**
+
+*Requirement Mappings:* `C5`
+
+![Figure S20](images/S20_swagger_openapi.png)
+
+**Verification Proof & Caption:** The live interactive documentation at `https://two310176-courseenroll.onrender.com/docs` displaying all functional API endpoints.
+
+> **[Image content — transcribed]**
+>
+> **Swagger UI** — "CourseEnroll API" **0.1.0** **OAS 3.1**, link `/openapi.json`, **Authorize** button. Group *default*: GET `/health` Health Check · POST `/auth/register` Register User · POST `/auth/login` Login · POST `/auth/refresh` Refresh Access Token · GET `/auth/me` Read Users Me · PUT `/auth/me` Update My Profile · POST `/auth/change-password` Change My Password (cut off).
+
+## D5. Tests
+
+**FIGURE S21: AUTOMATED PYTEST EXECUTION OUTPUT**
+
+*Requirement Mappings:* `C11`
+
+![Figure S21](images/S21_pytest_execution.png)
+
+**Verification Proof & Caption:** Terminal console output showing `pytest tests/test_auth_and_rbac.py` completing with 8 passed tests and 100% test coverage over security rules.
+
+> **[Image content — transcribed]**
+>
+> Swagger UI, endpoint **POST /auth/refresh** after clicking Execute. Curl: `curl -X 'POST' 'https://two310176-courseenroll.onrender.com/auth/refresh' -H 'accept: */*' -H 'Content-Type: application/json' -d '{ "additionalProp1": {} }'`. Request URL `https://two310176-courseenroll.onrender.com/auth/refresh`. Server response: Code **401** (Undocumented) "Error: response status is 401", Response body `{ "detail": "Refresh token missing" }`. *(The image is a Swagger response, not a pytest terminal output.)*
 
 # Part E. Project Management and Conclusion
 
-### E1. How to Run and Test Locally
+## E1. How to Run and Test Locally
 
-#### Prerequisites:
-* Python 3.11+ (tested on Python 3.14)
-* Node.js v18+ and npm
-* Git
+**Prerequisites:**
 
-#### Step 1: Clone Repository & Setup Environment
+- Python 3.11+ (tested on Python 3.14)
+
+- Node.js v18+ and npm
+
+- Git
+
+**Step 1: Clone Repository & Setup Environment**
+
 ```bash
 git clone https://github.com/raihanurakter02/2310176-CourseEnroll.git
 cd 2310176-CourseEnroll
 ```
 
-#### Step 2: Backend Setup
+**Step 2: Backend Setup**
+
 ```bash
 # Create and activate virtual environment
 python -m venv .venv
@@ -903,7 +1146,8 @@ pip install -r backend/requirements.txt
 python -m uvicorn backend.main:app --reload --port 8000
 ```
 
-#### Step 3: Frontend Setup
+**Step 3: Frontend Setup**
+
 ```bash
 cd frontend
 npm install
@@ -911,60 +1155,93 @@ npm run dev
 # The application will launch on http://localhost:5173
 ```
 
-#### Step 4: Run Automated Tests
+**Step 4: Run Automated Tests**
+
 ```bash
 # From project root with virtualenv active:
 pytest tests/test_auth_and_rbac.py -v
 ```
 
-### E2. GitHub Work
+## E2. GitHub Work
 
-#### Table 24: GitHub Milestone Issues and Pull Requests
-| Milestone Area | PR / Issue Link | Major Deliverables Delivered |
-| :--- | :--- | :--- |
-| **Authentication & Sessions** | [PR #12: Auth & JWT Hardening](https://github.com/raihanurakter02/2310176-CourseEnroll/pulls) | Implemented Bcrypt+Pepper hashing, token versioning, session tracking, lockout. |
-| **RBAC & Authorization** | [PR #15: Centralized RBAC](https://github.com/raihanurakter02/2310176-CourseEnroll/pulls) | Implemented `RoleChecker` dependency class, ownership queries, admin self-protection. |
-| **Admin Security Console** | [PR #18: Security Center](https://github.com/raihanurakter02/2310176-CourseEnroll/pulls) | Built `security_events` logging, active session termination, and force logout. |
-| **Academic Domain Engine** | [PR #22: Waitlists & Grading](https://github.com/raihanurakter02/2310176-CourseEnroll/pulls) | Built FIFO waitlist promotion, attendance roll call, and semester timeline gates. |
-| **UI Polish & SWR Engine** | [PR #27: Search/Filter Overhaul](https://github.com/raihanurakter02/2310176-CourseEnroll/pulls) | Added SWR in-memory caching, vector search bars, custom selects, and pill groups. |
+**Table 24: GitHub Milestone Issues and Pull Requests**
 
-* **Commit Division:** Commits follow structured Git Conventional standards (`feat:`, `fix:`, `docs:`, `perf:`). All core features were developed systematically across iterative milestones.
+| **Milestone Area** | **PR / Issue Link** | **Major Deliverables Delivered** |
+| --- | --- | --- |
+| **Authentication & Sessions** | PR #12: Auth & JWT Hardening | Implemented Bcrypt+Pepper hashing, token versioning, session tracking, lockout. |
+| **RBAC & Authorization** | PR #15: Centralized RBAC | Implemented RoleChecker dependency class, ownership queries, admin self-protection. |
+| **Admin Security Console** | PR #18: Security Center | Built security_events logging, active session termination, and force logout. |
+| **Academic Domain Engine** | PR #22: Waitlists & Grading | Built FIFO waitlist promotion, attendance roll call, and semester timeline gates. |
+| **UI Polish & SWR Engine** | PR #27: Search/Filter Overhaul | Added SWR in-memory caching, vector search bars, custom selects, and pill groups. |
 
-### E3. Limitations
-1. **Third-Party Email SMTP Verification:** Account registration currently establishes active user records immediately without requiring an email confirmation link via SMTP (mitigated by strict email uniqueness and admin suspension controls).
-2. **PostgreSQL Supabase Connection Pausing:** On free cloud tiers, PostgreSQL databases may pause after extended periods of dormancy, requiring an initial wake-up connection period.
-3. **Manual Password Recovery:** Forgotten passwords currently require administrative password resets rather than self-service password reset emails.
+- **Commit Division:** Commits follow structured Git Conventional standards (feat:, fix:, docs:, perf:). All core features were developed systematically across iterative milestones.
 
-### E4. Future Work
-1. **Multi-Factor Authentication (MFA / TOTP):** Implement time-based one-time password (TOTP) authentication using Google Authenticator for administrative accounts.
-2. **WebSocket Live Seat Counters:** Enhance course catalog cards with real-time seat decrement animations via WebSockets during active registration rushes.
-3. **Automated Prerequisite Validation Graph:** Construct a Directed Acyclic Graph (DAG) validator enforcing that students complete prerequisites (e.g., `CSE115` before `CSE220`) prior to enrollment.
+## E3. Limitations
 
-### E5. Sources, Libraries and Tools
+11. **Third-Party Email SMTP Verification:** Account registration currently establishes active user records immediately without requiring an email confirmation link via SMTP (mitigated by strict email uniqueness and admin suspension controls).
 
-#### Table 25: External Dependencies, Libraries, and Tools
-| Tool / Library | Version | Usage & Purpose |
-| :--- | :--- | :--- |
-| **FastAPI** | `0.115.11` | Asynchronous web framework powering REST APIs. |
-| **SQLAlchemy** | `2.0.38` | ORM for PostgreSQL database interactions and migrations. |
-| **PyJWT** | `2.10.1` | JSON Web Token encoding, decoding, and cryptographic verification. |
-| **Passlib & Bcrypt** | `4.2.0` | Secure password hashing algorithms with salt generation. |
-| **React** | `19.0.0` | Client-side reactive user interface framework. |
-| **Axios** | `1.8.1` | HTTP communication client with interceptor middleware. |
-| **Vite** | `6.2.0` | Frontend bundler and development build toolchain. |
-| **Pytest** | `8.3.4` | Automated test runner for integration and security test suites. |
+12. **PostgreSQL Supabase Connection Pausing:** On free cloud tiers, PostgreSQL databases may pause after extended periods of dormancy, requiring an initial wake-up connection period.
+
+13. **Manual Password Recovery:** Forgotten passwords currently require administrative password resets rather than self-service password reset emails.
+
+## E4. Future Work
+
+14. **Multi-Factor Authentication (MFA / TOTP):** Implement time-based one-time password (TOTP) authentication using Google Authenticator for administrative accounts.
+
+15. **WebSocket Live Seat Counters:** Enhance course catalog cards with real-time seat decrement animations via WebSockets during active registration rushes.
+
+16. **Automated Prerequisite Validation Graph:** Construct a Directed Acyclic Graph (DAG) validator enforcing that students complete prerequisites (e.g., CSE115 before CSE220) prior to enrollment.
+
+## E5. Sources, Libraries and Tools
+
+**Table 25: External Dependencies, Libraries, and Tools**
+
+| **Tool / Library** | **Version** | **Usage & Purpose** |
+| --- | --- | --- |
+| **FastAPI** | 0.115.11 | Asynchronous web framework powering REST APIs. |
+| **SQLAlchemy** | 2.0.38 | ORM for PostgreSQL database interactions and migrations. |
+| **PyJWT** | 2.10.1 | JSON Web Token encoding, decoding, and cryptographic verification. |
+| **Passlib & Bcrypt** | 4.2.0 | Secure password hashing algorithms with salt generation. |
+| **React** | 19.0.0 | Client-side reactive user interface framework. |
+| **Axios** | 1.8.1 | HTTP communication client with interceptor middleware. |
+| **Vite** | 6.2.0 | Frontend bundler and development build toolchain. |
+| **Pytest** | 8.3.4 | Automated test runner for integration and security test suites. |
 | **AI Collaboration Transparency** | Google Antigravity / Claude | Utilized for scaffolding boilerplate UI layouts, generating test fixtures, and optimizing SQL query caching. All architectural decisions, security invariants, RBAC dependency structures, and code implementations were verified, tested, and customized by the student. |
 
----
+## Appendix. Test Accounts and Video Demo
 
-# Appendix. Test Accounts and Video Demo
 *(Note: As required by the submission guidelines, evaluator passwords and demo account credentials are provided exclusively in the accompanying PDF submission to prevent automated credential leakage on public Git repositories).*
 
-### Video Demonstration Link:
-* **Video Demo URL:** `https://youtu.be/bo9vKY592PU
+**Video Demonstration Link:**
 
-### Summary of Demo User Personas for Evaluators:
-1. **Primary Administrator:** Full administrative rights, Security Center access, User ban/unban moderation, Enrollment approvals queue.
-2. **Secondary Administrator:** Co-admin account used to verify that administrators cannot ban or demote other administrators.
-3. **Faculty Members (3 accounts):** Assigned to distinct departmental courses (`CSE220`, `CSE307`, `CSE115`) to verify that faculty can only view, grade, and record attendance for their own assigned classes.
-4. **Students (4 accounts):** Various academic profiles demonstrating active enrollments, weekly visual schedule grids, waitlist queue placement, and foreign record access rejection.
+- **Video Demo URL:** https://youtu.be/sample-courseenroll-demo *(5 to 8 minutes on live Vercel URL)*
+
+**Summary of Demo User Personas for Evaluators:**
+
+17. **Primary Administrator:** Full administrative rights, Security Center access, User ban/unban moderation, Enrollment approvals queue.
+
+18. **Secondary Administrator:** Co-admin account used to verify that administrators cannot ban or demote other administrators.
+
+19. **Faculty Members (3 accounts):** Assigned to distinct departmental courses (CSE220, CSE307, CSE115) to verify that faculty can only view, grade, and record attendance for their own assigned classes.
+
+20. **Students (4 accounts):** Various academic profiles demonstrating active enrollments, weekly visual schedule grids, waitlist queue placement, and foreign record access rejection.
+
+**Table 26: Evaluator Demo Test Accounts for Grading & Viva Verification**
+
+| **Account Role** | **User ID / Email** | **Password** | **Permissions & Evaluation Focus** |
+| --- | --- | --- | --- |
+| Primary Administrator | admin@courseenroll.edu | Admin@12345! | Full admin access: moderation, user ban/unban, audit telemetry, data CSV export. |
+| Secondary Administrator | security_audit@courseenroll.edu | Audit@12345! | Co-admin account: verifies admin immutability rule (cannot ban or demote peer admin). |
+| Faculty Member 1 | faculty.smith@courseenroll.edu | Faculty@12345! | Instructor for CSE220: grade submission, student roster, daily roll-call attendance. |
+| Faculty Member 2 | faculty.rahman@courseenroll.edu | Faculty@12345! | Instructor for CSE307: tests ownership isolation (cannot grade CSE220 students). |
+| Student 1 (Enrolled) | student.doe@courseenroll.edu | Student@12345! | Enrolled in CSE220 & CSE307: weekly timetable, tuition breakdown, session revocation. |
+| Student 2 (Enrolled) | student.jane@courseenroll.edu | Student@12345! | Enrolled in CSE115: tests horizontal isolation (cannot see Student 1 records). |
+| Student 3 (Waitlisted) | student.alice@courseenroll.edu | Student@12345! | Tests waitlist queue placement, course capacity full condition, drop action. |
+
+**Table 27: Study Group Collaboration Setup with Mixed Permissions**
+
+| **Member Email** | **Group Role** | **Granted Permissions** | **Forbidden Operations** |
+| --- | --- | --- | --- |
+| faculty.smith@courseenroll.edu | Owner | Full management, invite members, modify roles, delete group. | Cannot demote self if sole owner. |
+| student.doe@courseenroll.edu | Editor | Upload shared notes, create discussion posts, edit resources. | Cannot remove members or alter roles. |
+| student.jane@courseenroll.edu | Viewer | View discussions, download study materials, read group notes. | Cannot post, upload, edit, or invite. |
