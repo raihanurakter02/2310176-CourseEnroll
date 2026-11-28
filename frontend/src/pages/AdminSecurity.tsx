@@ -366,10 +366,10 @@ const AdminSecurity: React.FC = () => {
     }
   }, [cachedEvents, toast]);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (force = false) => {
     if (!cachedUsers) setUsersLoading(true);
     try {
-      const res = await api.get('/users');
+      const res = await api.get('/users', force ? ({ skipCache: true } as any) : undefined);
       setUsers(res.data || []);
     } catch (err) {
       console.error('Failed to load users', err);
@@ -388,7 +388,7 @@ const AdminSecurity: React.FC = () => {
     if (activeTab === 'Overview') fetchStats();
     if (activeTab === 'Active Sessions') fetchSessions();
     if (activeTab === 'Security Events') fetchEvents();
-    if (activeTab === 'User Access Control') fetchUsers();
+    if (activeTab === 'User Access Control') fetchUsers(true);
     if (activeTab === 'Content Moderation') fetchModerationData();
   }, [activeTab, fetchStats, fetchSessions, fetchEvents, fetchUsers]);
 
@@ -431,16 +431,23 @@ const AdminSecurity: React.FC = () => {
   const handleBan = async () => {
     if (!banModalUser) return;
     setBanLoading(true);
+    const reason = banReason.trim() || 'Administrative action';
     try {
-      await api.post(`/admin/security/users/${banModalUser.id}/ban`, { ban_reason: banReason });
+      await api.post(`/admin/security/users/${banModalUser.id}/ban`, { ban_reason: reason });
       toast?.showToast(`${banModalUser.name} has been banned`, 'success');
+      // Optimistic update: immediately reflect ban in UI
+      setUsers(prev => prev.map(u =>
+        u.id === banModalUser.id ? { ...u, is_banned: true, ban_reason: reason } : u
+      ));
       setBanModalUser(null);
       setBanReason('');
-      fetchUsers();
+      // Force-refresh from server to get authoritative state
+      fetchUsers(true);
       fetchStats();
       fetchEvents();
-    } catch {
-      toast?.showToast('Failed to ban user', 'error');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Failed to ban user';
+      toast?.showToast(msg, 'error');
     } finally {
       setBanLoading(false);
     }
@@ -451,11 +458,17 @@ const AdminSecurity: React.FC = () => {
     try {
       await api.post(`/admin/security/users/${user.id}/unban`);
       toast?.showToast(`${user.name} has been unbanned`, 'success');
-      fetchUsers();
+      // Optimistic update: immediately reflect unban in UI
+      setUsers(prev => prev.map(u =>
+        u.id === user.id ? { ...u, is_banned: false, ban_reason: null } : u
+      ));
+      // Force-refresh from server
+      fetchUsers(true);
       fetchStats();
       fetchEvents();
-    } catch {
-      toast?.showToast('Failed to unban user', 'error');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Failed to unban user';
+      toast?.showToast(msg, 'error');
     } finally {
       setUnbanLoadingId(null);
     }
@@ -861,7 +874,7 @@ const AdminSecurity: React.FC = () => {
             <strong>{filteredUsers.length}</strong> of {users.length}
           </div>
           <button
-            onClick={fetchUsers}
+            onClick={() => fetchUsers(true)}
             className="btn-outline"
             style={{ width: 'auto', padding: '0.45rem 0.9rem', fontSize: '0.8125rem', height: '40px' }}
           >
@@ -1000,7 +1013,7 @@ const AdminSecurity: React.FC = () => {
       {/* Ban Modal */}
       <Modal
         isOpen={!!banModalUser}
-        onClose={() => { setBanModalUser(null); setBanReason(''); }}
+        onClose={() => { setBanModalUser(null); setBanReason(''); setBanLoading(false); }}
         title={`Ban ${banModalUser?.name ?? 'User'}`}
         size="sm"
       >
@@ -1019,7 +1032,7 @@ const AdminSecurity: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
           <button
-            onClick={() => { setBanModalUser(null); setBanReason(''); }}
+            onClick={() => { setBanModalUser(null); setBanReason(''); setBanLoading(false); }}
             className="btn-outline"
             style={{ width: 'auto', flex: 1 }}
           >
@@ -1027,7 +1040,7 @@ const AdminSecurity: React.FC = () => {
           </button>
           <button
             onClick={handleBan}
-            disabled={banLoading || !banReason.trim()}
+            disabled={banLoading}
             style={{
               flex: 1,
               background: '#dc2626',
@@ -1037,8 +1050,8 @@ const AdminSecurity: React.FC = () => {
               padding: '0.65rem 1.25rem',
               fontWeight: 600,
               fontSize: '0.875rem',
-              cursor: banLoading || !banReason.trim() ? 'not-allowed' : 'pointer',
-              opacity: banLoading || !banReason.trim() ? 0.6 : 1,
+              cursor: banLoading ? 'not-allowed' : 'pointer',
+              opacity: banLoading ? 0.6 : 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
